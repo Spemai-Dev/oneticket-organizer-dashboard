@@ -16,8 +16,8 @@ import {
   Ticket as LogoIcon,
   X
 } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { Avatar } from "../ui/avatar";
+import styles from "./sidebar.module.scss";
 
 interface NavItem {
   name: string;
@@ -65,21 +65,23 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
 
   const sidebarContent = (
-    <div className="flex flex-col justify-between h-full p-4 select-none">
-      <div className="flex flex-col gap-6">
+    <div className={styles.sidebarWrapper}>
+      <div className={styles.topContent}>
         {/* Brand Logo & Mobile Close */}
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-[#00d07d] flex items-center justify-center text-[#041c14]">
-              <LogoIcon className="h-5 w-5 stroke-[2.5]" />
-            </div>
-            <span className="text-xl font-bold text-white tracking-tight">OneTicket</span>
+        <div className={styles.brandHeader}>
+          <div className={styles.brandLogo}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/oneticket_logo.png"
+              alt="OneTicket"
+              className={styles.brandLogoImg}
+            />
           </div>
 
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden h-8 w-8 rounded-lg bg-[#07281d] text-[#97bcac] hover:text-white flex items-center justify-center"
+              className={styles.closeBtn}
               aria-label="Close Sidebar"
             >
               <X className="h-5 w-5" />
@@ -88,13 +90,13 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
         </div>
 
         {/* Navigation Sections */}
-        <nav className="flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-220px)] pr-1 no-scrollbar">
+        <nav className={styles.navContainer}>
           {NAV_SECTIONS.map((section) => (
-            <div key={section.title} className="flex flex-col gap-1.5">
-              <h4 className="px-3 text-[10px] font-bold tracking-wider text-[#638b7d] uppercase">
+            <div key={section.title} className={styles.navSection}>
+              <h4 className={styles.sectionTitle}>
                 {section.title}
               </h4>
-              <ul className="flex flex-col gap-1">
+              <ul className={styles.navList}>
                 {section.items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                   const Icon = item.icon;
@@ -103,19 +105,9 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
                       <Link
                         href={item.href}
                         onClick={onCloseMobile}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-xl text-xs font-semibold transition-all duration-200 group",
-                          isActive
-                            ? "bg-[#0b3829] text-white shadow-sm"
-                            : "text-[#97bcac] hover:bg-[#07281d] hover:text-white"
-                        )}
+                        className={`${styles.navLink} ${isActive ? styles.active : ""}`}
                       >
-                        <span
-                          className={cn(
-                            "h-2 w-2 rounded-full transition-all",
-                            isActive ? "bg-[#00d07d]" : "bg-transparent group-hover:bg-[#00d07d]/40"
-                          )}
-                        />
+                        <span className={styles.indicatorDot} />
                         <Icon className="h-4 w-4 shrink-0" />
                         <span>{item.name}</span>
                       </Link>
@@ -129,17 +121,17 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
       </div>
 
       {/* Bottom Actions & Profile */}
-      <div className="flex flex-col gap-4 pt-3 border-t border-[#0d3326]">
-        <button className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[#00d07d] hover:bg-[#00b36b] text-[#041c14] font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]">
+      <div className={styles.bottomSection}>
+        <button className={styles.newEventBtn}>
           <Plus className="h-4 w-4 stroke-[3]" />
           <span>New event</span>
         </button>
 
-        <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-[#07281d] cursor-pointer transition-colors">
+        <div className={styles.profileCard}>
           <Avatar fallback="A" size="sm" className="bg-[#00d07d] text-[#041c14] font-bold" />
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-xs font-bold text-white truncate">Amila</span>
-            <span className="text-[10px] text-[#638b7d] truncate">Confront Events</span>
+          <div className={styles.profileInfo}>
+            <span className={styles.userName}>Amila</span>
+            <span className={styles.orgName}>Confront Events</span>
           </div>
         </div>
       </div>
@@ -149,21 +141,21 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 bg-[#041c14] text-[#a3c9bb] flex-col justify-between h-screen sticky top-0">
+      <aside className={styles.desktopSidebar}>
         {sidebarContent}
       </aside>
 
       {/* Mobile Drawer Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className={styles.mobileDrawer}>
           {/* Dark backdrop */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className={styles.backdrop}
             onClick={onCloseMobile}
           />
 
           {/* Slide-out drawer */}
-          <aside className="relative w-72 max-w-[80vw] bg-[#041c14] text-[#a3c9bb] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-300">
+          <aside className={styles.drawerContent}>
             {sidebarContent}
           </aside>
         </div>

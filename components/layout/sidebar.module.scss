@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Sidebar Layout Component Stylesheet
+   ========================================================================== */
+
+.desktopSidebar {
+  display: none;
+  width: 16rem; /* 256px */
+  flex-shrink: 0;
+  background-color: #041c14;
+  color: #a3c9bb;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+
+  @media (min-width: 1024px) {
+    display: flex;
+  }
+}
+
+.mobileDrawer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    transition: opacity 200ms ease;
+  }
+
+  .drawerContent {
+    position: relative;
+    width: 18rem; /* 288px */
+    max-width: 80vw;
+    background-color: #041c14;
+    color: #a3c9bb;
+    height: 100%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+  }
+}
+
+.sidebarWrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 1rem;
+  user-select: none;
+}
+
+.topContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+
+  .brandLogo {
+    display: flex;
+    align-items: center;
+
+    .brandLogoImg {
+      height: 2.5rem; /* 40px */
+      width: auto;
+      object-fit: contain;
+    }
+  }
+
+  .closeBtn {
+    height: 2rem;
+    width: 2rem;
+    border-radius: 0.5rem;
+    background-color: #07281d;
+    color: #97bcac;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 200ms ease;
+
+    &:hover {
+      color: #ffffff;
+    }
+
+    @media (min-width: 1024px) {
+      display: none;
+    }
+  }
+}
+
+.navContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+  padding-right: 0.25rem;
+}
+
+.navSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  .sectionTitle {
+    padding: 0 0.75rem;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #638b7d;
+    text-transform: uppercase;
+  }
+
+  .navList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 200ms ease;
+  color: #97bcac;
+
+  @media (min-width: 1024px) {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  &:hover {
+    background-color: #07281d;
+    color: #ffffff;
+
+    .indicatorDot {
+      background-color: rgba(0, 208, 125, 0.4);
+    }
+  }
+
+  &.active {
+    background-color: #0b3829;
+    color: #ffffff;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+    .indicatorDot {
+      background-color: #00d07d;
+    }
+  }
+
+  .indicatorDot {
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 9999px;
+    background-color: transparent;
+    transition: all 200ms ease;
+  }
+}
+
+.bottomSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #0d3326;
+
+  .newEventBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background-color: #00d07d;
+    color: #041c14;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 200ms ease;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #00b36b;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .profileCard {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: background-color 200ms ease;
+
+    &:hover {
+      background-color: #07281d;
+    }
+
+    .profileInfo {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      .userName {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .orgName {
+        font-size: 10px;
+        color: #638b7d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}

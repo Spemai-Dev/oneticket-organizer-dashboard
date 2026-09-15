@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import styles from "./event-filter-tabs.module.scss";
 
 interface EventFilterTabsProps {
   activeTab: string;
@@ -16,7 +17,7 @@ export function EventFilterTabs({
   const tabs = ["All", "Live", "Upcoming", "Past", "Draft"];
 
   return (
-    <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3 flex-wrap">
+    <div className={styles.tabsRow}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab;
         const count = counts[tab] ?? 0;
@@ -24,20 +25,10 @@ export function EventFilterTabs({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              isActive
-                ? "bg-[#043825] text-white shadow-sm"
-                : "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800"
-            }`}
+            className={`${styles.tabBtn} ${isActive ? styles.active : ""}`}
           >
             <span>{tab}</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                isActive
-                  ? "bg-[#00d07d] text-[#041c14]"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-              }`}
-            >
+            <span className={styles.countBadge}>
               {count}
             </span>
           </button>

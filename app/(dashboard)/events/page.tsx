@@ -40,8 +40,8 @@ export default function EventsPage() {
         }}
       />
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* Events Grid (2 columns layout as shown in screenshot) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredEvents.map((evt) => (
           <EventCard key={evt.id} event={evt} />
         ))}

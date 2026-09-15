@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PAYMENT_METHOD_STATS } from "../../lib/mock-data";
 import { formatNumber } from "../../lib/utils";
+import styles from "./payment-method-donut.module.scss";
 
 export function PaymentMethodDonut() {
   const [mounted, setMounted] = useState(false);
@@ -13,17 +14,17 @@ export function PaymentMethodDonut() {
   }, []);
 
   return (
-    <div className="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col justify-between gap-5 h-full">
+    <div className={styles.cardContainer}>
       <div>
-        <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+        <h3 className={styles.title}>
           Sale by Payment Method
         </h3>
-        <p className="text-xs text-zinc-500">Gateway distribution & split</p>
+        <p className={styles.subtitle}>Gateway distribution & split</p>
       </div>
 
-      <div className="flex flex-col items-center gap-5 my-auto w-full">
+      <div className={styles.chartContent}>
         {/* Centered Donut Chart with Center Text */}
-        <div className="relative w-44 h-44 shrink-0 mx-auto flex items-center justify-center">
+        <div className={styles.chartWrapper}>
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -64,34 +65,34 @@ export function PaymentMethodDonut() {
           )}
 
           {/* Center Text overlay inside Donut */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-            <span className="text-xs font-extrabold text-zinc-900 dark:text-white">
+          <div className={styles.centerOverlay}>
+            <span className={styles.totalAmount}>
               Rs. 27.5M
             </span>
-            <span className="text-[10px] text-zinc-500 font-medium">3,240 tkts</span>
+            <span className={styles.totalTickets}>3,240 tkts</span>
           </div>
         </div>
 
         {/* Legend List underneath chart spanning full width */}
-        <div className="flex flex-col gap-2.5 w-full pt-2 border-t border-zinc-100 dark:border-zinc-800">
+        <div className={styles.legendList}>
           {PAYMENT_METHOD_STATS.map((item) => (
             <div
               key={item.key}
-              className="flex items-center justify-between text-xs w-full gap-2"
+              className={styles.legendItem}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div className={styles.methodInfo}>
                 <span
-                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                  className={styles.colorDot}
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                <span className={styles.methodName}>
                   {item.name}
                 </span>
-                <span className="text-zinc-400 font-normal text-[11px] shrink-0">
+                <span className={styles.countSubtext}>
                   · {item.count}
                 </span>
               </div>
-              <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 shrink-0 text-right">
+              <span className={styles.amountText}>
                 Rs. {(item.amount / 1000000).toFixed(1)}M
               </span>
             </div>

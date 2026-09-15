@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { SALES_VELOCITY_DATA } from "../../lib/mock-data";
 import { formatNumber } from "../../lib/utils";
+import styles from "./sales-velocity-chart.module.scss";
 
 interface SalesVelocityChartProps {
   title?: string;
@@ -31,24 +32,24 @@ export function SalesVelocityChart({
   }, []);
 
   return (
-    <div className="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col justify-between gap-5 h-full">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h3 className="text-base font-bold text-zinc-900 dark:text-white">{title}</h3>
-          <p className="text-xs text-zinc-500">{subtitle}</p>
+    <div className={styles.cardContainer}>
+      <div className={styles.headerRow}>
+        <div className={styles.titleGroup}>
+          <h3 className={styles.title}>{title}</h3>
+          <p className={styles.subtitle}>{subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900">
+        <div className={styles.badgeGroup}>
+          <span className={styles.revenueBadge}>
             Rs. 27.5M
           </span>
-          <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
+          <span className={styles.ticketsBadge}>
             3,240 tickets
           </span>
         </div>
       </div>
 
       {/* Chart container */}
-      <div className="w-full h-48 mt-2">
+      <div className={styles.chartContainer}>
         {mounted ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={SALES_VELOCITY_DATA} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
@@ -97,12 +98,12 @@ export function SalesVelocityChart({
       </div>
 
       {showPeakInfo && (
-        <div className="flex items-center justify-between text-xs pt-3 border-t border-zinc-100 dark:border-zinc-800">
-          <span className="flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-300">
-            <span className="h-2 w-2 rounded-full bg-[#00d07d]" />
+        <div className={styles.peakInfoRow}>
+          <span className={styles.peakLabel}>
+            <span className={styles.greenDot} />
             Peak Velocity: 194 tickets on Friday, 28 Aug
           </span>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+          <span className={styles.pacingText}>
             Pacing: +14% vs last week
           </span>
         </div>

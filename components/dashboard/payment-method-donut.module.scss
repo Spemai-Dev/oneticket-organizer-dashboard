@@ -1,0 +1,152 @@
+/* ==========================================================================
+   PaymentMethodDonut Component Stylesheet
+   ========================================================================== */
+
+.cardContainer {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  background-color: #ffffff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  height: 100%;
+
+  :global(.dark) & {
+    border-color: #27272a;
+    background-color: #18181b;
+  }
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #18181b;
+
+  :global(.dark) & {
+    color: #ffffff;
+  }
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: #71717a;
+}
+
+.chartContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: auto;
+  margin-bottom: auto;
+  width: 100%;
+}
+
+.chartWrapper {
+  position: relative;
+  width: 11rem; /* 176px */
+  height: 11rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centerOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+
+  .totalAmount {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #18181b;
+
+    :global(.dark) & {
+      color: #ffffff;
+    }
+  }
+
+  .totalTickets {
+    font-size: 10px;
+    color: #71717a;
+    font-weight: 500;
+  }
+}
+
+.legendList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f4f4f5;
+
+  :global(.dark) & {
+    border-color: #27272a;
+  }
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  width: 100%;
+  gap: 0.5rem;
+
+  .methodInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+
+    .colorDot {
+      height: 0.625rem;
+      width: 0.625rem;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+
+    .methodName {
+      font-weight: 600;
+      color: #27272a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      :global(.dark) & {
+        color: #e4e4e7;
+      }
+    }
+
+    .countSubtext {
+      color: #a1a1aa;
+      font-weight: 400;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+  }
+
+  .amountText {
+    font-family: monospace;
+    font-weight: 700;
+    color: #18181b;
+    flex-shrink: 0;
+    text-align: right;
+
+    :global(.dark) & {
+      color: #f4f4f5;
+    }
+  }
+}

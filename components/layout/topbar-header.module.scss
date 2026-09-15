@@ -1,0 +1,123 @@
+/* ==========================================================================
+   TopbarHeader Component Stylesheet
+   ========================================================================== */
+
+.headerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  padding-top: 0.25rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 1.5rem;
+    padding-top: 0.5rem;
+  }
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+
+  .greetingTitle {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #18181b;
+    letter-spacing: -0.025em;
+
+    @media (min-width: 640px) {
+      font-size: 1.5rem;
+    }
+
+    :global(.dark) & {
+      color: #ffffff;
+    }
+  }
+
+  .metaInfoRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #71717a;
+    flex-wrap: wrap;
+
+    :global(.dark) & {
+      color: #a1a1aa;
+    }
+
+    .liveStatus {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      color: #059669;
+      font-weight: 600;
+
+      :global(.dark) & {
+        color: #34d399;
+      }
+
+      .pulseBadge {
+        position: relative;
+        display: flex;
+        height: 0.5rem;
+        width: 0.5rem;
+
+        .pingDot {
+          animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+          position: absolute;
+          display: inline-flex;
+          height: 100%;
+          width: 100%;
+          border-radius: 9999px;
+          background-color: #34d399;
+          opacity: 0.75;
+        }
+
+        .solidDot {
+          position: relative;
+          display: inline-flex;
+          border-radius: 9999px;
+          height: 0.5rem;
+          width: 0.5rem;
+          background-color: #10b981;
+        }
+      }
+    }
+
+    .eventName {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+
+      @media (min-width: 640px) {
+        max-width: none;
+      }
+    }
+  }
+}
+
+.rightColumn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  @media (min-width: 640px) {
+    gap: 0.75rem;
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
