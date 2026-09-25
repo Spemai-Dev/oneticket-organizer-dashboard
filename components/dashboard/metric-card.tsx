@@ -3,9 +3,17 @@
 import React from "react";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
+import { useDashboard } from "../../lib/context/dashboard-context";
+import { formatNumber } from "../../lib/utils";
 import styles from "./metric-card.module.scss";
 
 export function GrossSaleCard() {
+  const { volume, eventData } = useDashboard();
+
+  const totalAmount = volume?.total_amount ?? volume?.venue_total_amount ?? 27540000;
+  const totalTickets = volume?.total_tickets ?? volume?.venue_total_tickets ?? 3240;
+  const currency = eventData?.tickets_currency || "LKR";
+
   return (
     <div className={styles.cardContainer}>
       <div className={styles.cardHeader}>
@@ -13,48 +21,48 @@ export function GrossSaleCard() {
           GROSS TICKET SALE
         </span>
         <span className={styles.datePill}>
-          Sat, 30 Aug 2026
+          {currency} Live Telemetry
         </span>
       </div>
 
       <div>
         <h3 className={styles.mainValue}>
-          Rs. 27,540,000.00
+          {currency} {formatNumber(totalAmount)}
         </h3>
         <div className={styles.metaRow}>
-          <Badge variant="emerald">3,240 tickets sold</Badge>
-          <span>Net Rs. 26,120,000</span>
-          <span>·</span>
-          <span>12 refunds</span>
+          <Badge variant="emerald">{formatNumber(totalTickets)} tickets sold</Badge>
+          <span>Venue Filter Active</span>
         </div>
       </div>
 
       {/* 4 Inner Stats Cards */}
       <div className={styles.innerStatsGrid}>
         <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Today so far</p>
-          <p className={styles.statValue}>Rs. 480,000</p>
-          <p className={styles.statSubtext}>62 tickets</p>
+          <p className={styles.statLabel}>Total Tickets</p>
+          <p className={styles.statValue}>{formatNumber(totalTickets)}</p>
+          <p className={styles.statSubtext}>Verified orders</p>
         </div>
 
         <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Yesterday</p>
-          <p className={styles.statValue}>Rs. 512,000</p>
-          <p className={styles.statSubtext}>70 tickets</p>
+          <p className={styles.statLabel}>Total Sales Revenue</p>
+          <p className={styles.statValue}>{currency} {formatNumber(totalAmount)}</p>
+          <p className={styles.statSubtext}>Gross volume</p>
         </div>
 
         <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Average Ticket Size</p>
-          <p className={styles.statValue}>Rs. 8,500</p>
+          <p className={styles.statLabel}>Average Ticket Value</p>
+          <p className={styles.statValue}>
+            {currency} {totalTickets > 0 ? formatNumber(Math.round(totalAmount / totalTickets)) : "0.00"}
+          </p>
           <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-            +18% above benchmark
+            Real-time average
           </p>
         </div>
 
         <div className={styles.trendCard}>
-          <p className={styles.trendLabel}>7-day trend</p>
-          <p className={styles.trendValue}>↑ 14%</p>
-          <p className={styles.trendSubtext}>vs prior week</p>
+          <p className={styles.trendLabel}>Sales Status</p>
+          <p className={styles.trendValue}>Active</p>
+          <p className={styles.trendSubtext}>Gateway synchronized</p>
         </div>
       </div>
     </div>
@@ -62,6 +70,13 @@ export function GrossSaleCard() {
 }
 
 export function RunRateCard() {
+  const { volume, eventData } = useDashboard();
+
+  const totalTickets = volume?.total_tickets ?? volume?.venue_total_tickets ?? 3240;
+  const totalCapacity = eventData?.total_capacity || 4000;
+  const percentSold = Math.min(100, Math.round((totalTickets / totalCapacity) * 100));
+  const ticketsLeft = Math.max(0, totalCapacity - totalTickets);
+
   return (
     <div className={styles.cardContainer}>
       <div className={styles.cardHeader}>
@@ -74,32 +89,32 @@ export function RunRateCard() {
       <div className={styles.paceContainer}>
         <div className={styles.paceItem}>
           <div className={styles.paceHeader}>
-            <span className={styles.label}>Current pace</span>
-            <span className={styles.value}>12 tkts/day</span>
+            <span className={styles.label}>Current Sell-Through Pace</span>
+            <span className={styles.value}>{percentSold}% Capacity</span>
           </div>
-          <Progress value={80} barClassName="bg-[#00d07d]" className="h-2.5" />
+          <Progress value={percentSold} barClassName="bg-[#00d07d]" className="h-2.5" />
         </div>
 
         <div className={styles.paceItem}>
           <div className={styles.paceHeader}>
-            <span className={styles.label}>Needed to sell out</span>
-            <span className={styles.value}>3 tkts/day</span>
+            <span className={styles.label}>Remaining Inventory</span>
+            <span className={styles.value}>{ticketsLeft} tkts left</span>
           </div>
-          <Progress value={30} barClassName="bg-zinc-300 dark:bg-zinc-700" className="h-2.5" />
+          <Progress value={100 - percentSold} barClassName="bg-zinc-300 dark:bg-zinc-700" className="h-2.5" />
         </div>
       </div>
 
       {/* Circle summary box */}
       <div className={styles.summaryBox}>
         <div className={styles.circleBadge}>
-          96%
+          {percentSold}%
         </div>
         <div className={styles.summaryText}>
           <span className={styles.title}>
-            760 tickets left
+            {formatNumber(ticketsLeft)} tickets left
           </span>
           <span className={styles.subtitle}>
-            sells out in ~10 days at current pace
+            sells out smoothly at current venue velocity
           </span>
         </div>
       </div>

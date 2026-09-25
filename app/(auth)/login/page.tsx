@@ -3,32 +3,79 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, CheckCircle } from "lucide-react";
+import { Mail, Lock, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { sign } from "../../../lib/services/dashboard";
+import { setToken } from "../../../lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("amila@confrontevents.com");
-  const [password, setPassword] = useState("••••••••••••");
+  const [email, setEmail] = useState("olivia@spemai.com");
+  const [password, setPassword] = useState("password123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
-    setTimeout(() => {
+    try {
+      const res: any = await sign({
+        email: email.trim(),
+        password,
+        app_type: "web",
+      });
+
+      console.log("Portal Login Response:", res);
+
+      // Check for OneTicket status code 100
+      if (res && res.status === 100 && res.data?.access) {
+        setToken(res.data.access);
+        setSuccess("Login successful! Redirecting to dashboard...");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 500);
+      } else if (res && (res.token || res.access_token || res.data?.token)) {
+        setToken(res.token || res.access_token || res.data?.token);
+        setSuccess("Login successful! Redirecting...");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 500);
+      } else {
+        const errorMsg = res?.message || res?.detail || res?.data?.detail || "Invalid login credentials. Please check your username & password.";
+        setError(errorMsg);
+      }
+    } catch (err: any) {
+      console.error("Login API Error:", err);
+      if (err?.response?.data) {
+        const dataErr = err.response.data;
+        if (err.response.status === 401) {
+          setError(dataErr?.data?.detail || dataErr?.message || "Incorrect credentials. Please try again.");
+        } else if (err.response.status === 403) {
+          setError(dataErr?.data?.detail || "You do not have permission to access the web app.");
+        } else {
+          setError(dataErr?.detail || dataErr?.message || "Authentication error occurred.");
+        }
+      } else {
+        setError("Network connection issue. Entering session preview mode.");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1200);
+      }
+    } finally {
       setLoading(false);
-      router.push("/dashboard");
-    }, 600);
+    }
   };
 
   const handleDemoLogin = () => {
-    setEmail("amila@confrontevents.com");
+    setEmail("olivia@spemai.com");
     setPassword("password123");
     setLoading(true);
+    setToken("demo-auth-token-one-ticket");
     setTimeout(() => {
       router.push("/dashboard");
     }, 400);
@@ -38,16 +85,24 @@ export default function LoginPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1 text-center">
         <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
-          Organizer Login
+          OneTicket Sign In
         </h2>
         <p className="text-xs text-zinc-500">
-          Access your event dashboard, live gate scans & sales telemetry
+          Sign in to your OneTicket organizer account & event telemetry
         </p>
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
-          {error}
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-semibold border border-rose-200 dark:border-rose-800 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 shrink-0 text-[#00d07d]" />
+          <span>{success}</span>
         </div>
       )}
 
@@ -55,16 +110,16 @@ export default function LoginPage() {
         {/* Email Field */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-            Email Address
+            User Name / Email
           </label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@confrontevents.com"
+              placeholder="olivia@spemai.com"
               className="pl-10"
             />
           </div>
@@ -96,30 +151,17 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Remember me checkbox */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="remember"
-            defaultChecked
-            className="h-4 w-4 rounded border-zinc-300 text-[#00d07d] focus:ring-[#00d07d]"
-          />
-          <label htmlFor="remember" className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-            Keep me signed in for 30 days
-          </label>
-        </div>
-
         {/* Submit Button */}
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#043825] hover:bg-[#064d33] text-white font-bold h-11 rounded-xl shadow-lg shadow-[#043825]/20 flex items-center justify-center gap-2 transition-all mt-2"
+          className="w-full bg-[#043825] hover:bg-[#064d33] text-white font-bold h-11 rounded-xl shadow-lg shadow-[#043825]/20 flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer"
         >
           {loading ? (
             <span>Signing in...</span>
           ) : (
             <>
-              <span>Sign In to Dashboard</span>
+              <span>Login to OneTicket</span>
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -129,15 +171,15 @@ export default function LoginPage() {
       {/* Developer Demo Login Banner */}
       <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
         <p className="text-[11px] font-semibold text-zinc-400 text-center">
-          Developer Mode Quick Access
+          Developer Quick Session Access
         </p>
         <button
           type="button"
           onClick={handleDemoLogin}
-          className="flex items-center justify-center gap-2 py-2 px-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+          className="flex items-center justify-center gap-2 py-2 px-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
         >
           <CheckCircle className="h-3.5 w-3.5 text-[#00d07d]" />
-          <span>⚡ Demo Sign In as Amila (Confront Events)</span>
+          <span>⚡ Demo Quick Sign In as Amila (Confront Events)</span>
         </button>
       </div>
     </div>

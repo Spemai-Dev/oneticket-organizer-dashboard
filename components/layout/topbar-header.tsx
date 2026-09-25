@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { LogOut } from "lucide-react";
 import { EventSelector } from "./event-selector";
+import { useDashboard } from "../../lib/context/dashboard-context";
 import styles from "./topbar-header.module.scss";
 
 interface TopbarHeaderProps {
@@ -9,11 +11,16 @@ interface TopbarHeaderProps {
 }
 
 export function TopbarHeader({ actionButton }: TopbarHeaderProps) {
+  const { handleLogout, eventData } = useDashboard();
+
+  const activeEventName = eventData?.event_name || "Neon Nights Vol. 3";
+  const currency = eventData?.tickets_currency || "LKR";
+
   return (
     <header className={styles.headerContainer}>
       <div className={styles.leftColumn}>
         <h1 className={styles.greetingTitle}>
-          Good afternoon, Amila
+          Good afternoon, Merchant
         </h1>
         <div className={styles.metaInfoRow}>
           <span className={styles.liveStatus}>
@@ -24,17 +31,24 @@ export function TopbarHeader({ actionButton }: TopbarHeaderProps) {
             Live Updates
           </span>
           <span>·</span>
-          <span>Sat, 30 Aug 2026</span>
+          <span className={styles.eventName}>{activeEventName}</span>
           <span>·</span>
-          <span className={styles.eventName}>Neon Nights Vol. 3</span>
-          <span>·</span>
-          <span>LKR</span>
+          <span>{currency}</span>
         </div>
       </div>
 
       <div className={styles.rightColumn}>
         {actionButton}
         <EventSelector />
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={styles.logoutBtn}
+          title="Logout from dashboard"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span>Logout</span>
+        </button>
       </div>
     </header>
   );

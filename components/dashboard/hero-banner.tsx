@@ -1,13 +1,39 @@
 "use client";
 
 import React from "react";
+import { useDashboard } from "../../lib/context/dashboard-context";
 import { CURRENT_EVENT } from "../../lib/mock-data";
+import { environment } from "../../lib/environment";
 import { formatNumber } from "../../lib/utils";
 import styles from "./hero-banner.module.scss";
 
 export function HeroBanner() {
-  const percentSold = Math.round((CURRENT_EVENT.soldCount / CURRENT_EVENT.totalCapacity) * 1000) / 10;
-  const leftCount = CURRENT_EVENT.totalCapacity - CURRENT_EVENT.soldCount;
+  const { eventData, volume, tickets } = useDashboard();
+
+  const title = eventData?.event_name || CURRENT_EVENT.title;
+  const subtitle = eventData?.event_description || CURRENT_EVENT.subtitle;
+  const category = eventData?.category || CURRENT_EVENT.category;
+  const eventCode = eventData?.event_code || CURRENT_EVENT.code;
+  const currency = eventData?.tickets_currency || "LKR";
+
+  const bannerImg = eventData?.event_banner
+    ? `${environment.aws}/${eventData.event_banner.replace(/^\//, '')}`
+    : CURRENT_EVENT.imageUrl;
+
+  const soldCount = volume?.total_tickets ?? volume?.venue_total_tickets ?? CURRENT_EVENT.soldCount;
+  const totalCapacity = eventData?.total_capacity || CURRENT_EVENT.totalCapacity;
+
+  const percentSold = Math.min(100, Math.round((soldCount / totalCapacity) * 1000) / 10);
+  const leftCount = Math.max(0, totalCapacity - soldCount);
+
+  // Render tickets or fall back to mock tiers
+  const tierList = tickets.length > 0
+    ? tickets.map((t: any) => ({
+        id: t.id,
+        name: t.ticket_name,
+        price: Number(t.ticket_amount || 0),
+      }))
+    : CURRENT_EVENT.ticketTiers;
 
   return (
     <div className={styles.heroCard}>
@@ -19,13 +45,13 @@ export function HeroBanner() {
         <div className={styles.posterWrapper}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={CURRENT_EVENT.imageUrl}
-            alt={CURRENT_EVENT.title}
+            src={bannerImg}
+            alt={title}
             className={styles.posterImage}
           />
           <div className={styles.posterOverlay}>
-            <span className={styles.featuredBadge}>Featured Event</span>
-            <span className={styles.subtitle}>{CURRENT_EVENT.subtitle}</span>
+            <span className={styles.featuredBadge}>Active Event</span>
+            <span className={styles.subtitle}>{subtitle}</span>
           </div>
         </div>
 
@@ -34,32 +60,32 @@ export function HeroBanner() {
           {/* Top Badges */}
           <div className={styles.badgeRow}>
             <span className={styles.categoryBadge}>
-              {CURRENT_EVENT.category}
+              {category}
             </span>
             <span className={styles.tierCountBadge}>
-              {CURRENT_EVENT.ticketTiers.length} Ticket Tiers
+              {tierList.length} Ticket Tiers
             </span>
             <span className={styles.codeBadge}>
-              {CURRENT_EVENT.code}
+              {eventCode}
             </span>
           </div>
 
           {/* Title & Subtitle */}
           <div className={styles.headerInfo}>
             <h2 className={styles.title}>
-              {CURRENT_EVENT.title}
+              {title}
             </h2>
             <p className={styles.details}>
-              {CURRENT_EVENT.date} · {CURRENT_EVENT.time} · {CURRENT_EVENT.venue}, {CURRENT_EVENT.city}
+              Currency: {currency} {eventData?.event_expire_on ? `· Expire: ${new Date(eventData.event_expire_on).toLocaleDateString()}` : ''}
             </p>
           </div>
 
           {/* Pricing Pills */}
           <div className={styles.pricingRow}>
-            {CURRENT_EVENT.ticketTiers.map((tier) => (
+            {tierList.map((tier) => (
               <div key={tier.id} className={styles.pricingPill}>
                 <span>{tier.name} </span>
-                <span className={styles.priceAmount}>Rs. {formatNumber(tier.price)}</span>
+                <span className={styles.priceAmount}>{currency} {formatNumber(tier.price)}</span>
               </div>
             ))}
           </div>
@@ -71,7 +97,7 @@ export function HeroBanner() {
               <div className={styles.header}>
                 <span>SELL-THROUGH</span>
                 <span className={styles.soldCount}>
-                  {formatNumber(CURRENT_EVENT.soldCount)} / {formatNumber(CURRENT_EVENT.totalCapacity)} Sold
+                  {formatNumber(soldCount)} / {formatNumber(totalCapacity)} Sold
                 </span>
               </div>
               <div className={styles.percentageRow}>
@@ -92,13 +118,13 @@ export function HeroBanner() {
             {/* Projected Sell Out */}
             <div className={styles.projectedCol}>
               <span className={styles.label}>
-                PROJECTED SELL-OUT
+                TOTAL VENUE REVENUE
               </span>
               <span className={styles.date}>
-                {CURRENT_EVENT.projectedSellOutDate}
+                {currency} {formatNumber(volume?.total_amount || volume?.venue_total_amount || 27540000)}
               </span>
               <span className={styles.paceStatus}>
-                {CURRENT_EVENT.paceStatus}
+                Live Sales Telemetry
               </span>
             </div>
           </div>

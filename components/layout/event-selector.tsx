@@ -2,13 +2,24 @@
 
 import React, { useState } from "react";
 import { ChevronDown, Check, Calendar } from "lucide-react";
+import { useDashboard } from "../../lib/context/dashboard-context";
 import { MOCK_EVENTS } from "../../lib/mock-data";
-import { Event } from "../../types";
 import styles from "./event-selector.module.scss";
 
 export function EventSelector() {
-  const [selectedEvent, setSelectedEvent] = useState<Event>(MOCK_EVENTS[0]);
+  const { events, selectedEventId, setSelectedEventId, eventData } = useDashboard();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Active label
+  const activeTitle = eventData?.event_name ||
+    events.find((e) => String(e.event_details || e.id) === String(selectedEventId))?.event_name ||
+    MOCK_EVENTS[0].title;
+
+  const displayList = events.length > 0 ? events : MOCK_EVENTS.map(m => ({
+    id: m.id,
+    event_details: m.id,
+    event_name: m.title,
+  }));
 
   return (
     <div className={styles.selectorWrapper}>
@@ -16,7 +27,7 @@ export function EventSelector() {
         onClick={() => setIsOpen(!isOpen)}
         className={styles.triggerBtn}
       >
-        <span>{selectedEvent.title.split("·")[1]?.trim() || selectedEvent.title}</span>
+        <span>{activeTitle}</span>
         <ChevronDown className={`${styles.chevronIcon} ${isOpen ? styles.open : ""}`} />
       </button>
 
@@ -30,24 +41,30 @@ export function EventSelector() {
             <div className={styles.dropdownHeader}>
               <p className={styles.title}>Select Active Event</p>
             </div>
-            {MOCK_EVENTS.map((evt) => (
-              <button
-                key={evt.id}
-                onClick={() => {
-                  setSelectedEvent(evt);
-                  setIsOpen(false);
-                }}
-                className={`${styles.optionItem} ${selectedEvent.id === evt.id ? styles.active : ""}`}
-              >
-                <div className={styles.evtInfo}>
-                  <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-                  <span className={styles.evtTitle}>{evt.title}</span>
-                </div>
-                {selectedEvent.id === evt.id && (
-                  <Check className="h-3.5 w-3.5 shrink-0 text-[#00d07d]" />
-                )}
-              </button>
-            ))}
+            {displayList.map((evt) => {
+              const id = String(evt.event_details || evt.id);
+              const name = evt.event_name || evt.title;
+              const isSelected = id === String(selectedEventId);
+
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setSelectedEventId(id);
+                    setIsOpen(false);
+                  }}
+                  className={`${styles.optionItem} ${isSelected ? styles.active : ""}`}
+                >
+                  <div className={styles.evtInfo}>
+                    <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                    <span className={styles.evtTitle}>{name}</span>
+                  </div>
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-[#00d07d]" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </>
       )}

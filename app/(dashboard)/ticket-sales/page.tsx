@@ -3,14 +3,27 @@
 import React from "react";
 import { Download } from "lucide-react";
 import { TopbarHeader } from "../../../components/layout/topbar-header";
+import { ScheduleFilter } from "../../../components/dashboard/schedule-filter";
 import { SalesSummaryCards } from "../../../components/sales/sales-summary-cards";
 import { SalesVelocityChart } from "../../../components/dashboard/sales-velocity-chart";
 import { PaymentMethodDonut } from "../../../components/dashboard/payment-method-donut";
 import { SalesDataTable } from "../../../components/sales/sales-data-table";
+import { useDashboard } from "../../../lib/context/dashboard-context";
+import { download } from "../../../lib/services/dashboard";
 
 export default function TicketSalesPage() {
-  const handleExportCSV = () => {
-    alert("Exporting CSV report for Neon Nights Vol. 3 orders...");
+  const { selectedEventId } = useDashboard();
+
+  const handleExportCSV = async () => {
+    if (!selectedEventId) {
+      alert("No event selected to export report.");
+      return;
+    }
+    try {
+      await download(selectedEventId);
+    } catch (err) {
+      console.error("Export error:", err);
+    }
   };
 
   const actionButton = (
@@ -19,7 +32,7 @@ export default function TicketSalesPage() {
       className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-all cursor-pointer"
     >
       <Download className="h-3.5 w-3.5" />
-      <span>Export CSV</span>
+      <span>Export Report</span>
     </button>
   );
 
@@ -27,6 +40,9 @@ export default function TicketSalesPage() {
     <div className="flex flex-col gap-6">
       {/* Top Header Bar */}
       <TopbarHeader actionButton={actionButton} />
+
+      {/* Interactive Location, Date & Time Schedule Filter */}
+      <ScheduleFilter />
 
       {/* Top 3 Summary Metric Cards */}
       <SalesSummaryCards />

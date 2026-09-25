@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, ChevronDown, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { useDashboard } from "../../lib/context/dashboard-context";
 import { MOCK_ORDERS } from "../../lib/mock-data";
 import { StatusBadge } from "./status-badge";
 import { formatNumber } from "../../lib/utils";
@@ -9,13 +10,32 @@ import { Badge } from "../ui/badge";
 import styles from "./sales-data-table.module.scss";
 
 export function SalesDataTable() {
+  const { participants, dataCount, currentPage, setCurrentPage } = useDashboard();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("All Tiers");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
-  const [currentPage, setCurrentPage] = useState(1);
+
+  // Determine if using live API participants or mock orders fallback
+  const hasLiveParticipants = participants && participants.length > 0;
+
+  const ordersToDisplay = hasLiveParticipants
+    ? participants.map((p: any, idx: number) => ({
+        id: p.transaction_reference || p.id || `live-${idx}`,
+        transactionId: p.transaction_reference || `TXN-${idx + 1000}`,
+        attendeeName: p.customer_name || "Valued Customer",
+        attendeeEmail: p.customer_email || "customer@oneticket.lk",
+        tier: p.ticket_name || "General",
+        quantity: p.quantity || 1,
+        gateway: p.gateway || "OnePay Direct",
+        gatewayType: "OnePay",
+        amount: Number(p.total_amount || 0),
+        timestamp: p.datetime ? new Date(p.datetime).toLocaleString() : "Recently",
+        status: p.is_refund ? "Refunded" : "Completed",
+      }))
+    : MOCK_ORDERS;
 
   // Filter orders
-  const filteredOrders = MOCK_ORDERS.filter((order) => {
+  const filteredOrders = ordersToDisplay.filter((order) => {
     const matchesSearch =
       order.transactionId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.attendeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,6 +69,8 @@ export function SalesDataTable() {
     if (gatewayType.includes("Mintpay")) return <span className="h-2 w-2 rounded-full bg-amber-500" />;
     return <span className="h-2 w-2 rounded-full bg-blue-500" />;
   };
+
+  const totalCount = hasLiveParticipants ? dataCount : 1420;
 
   return (
     <div className={styles.cardContainer}>
@@ -167,13 +189,13 @@ export function SalesDataTable() {
       <div className={styles.paginationFooter}>
         <span className={styles.showingText}>
           Showing <span className={styles.highlight}>1–{filteredOrders.length}</span> of{" "}
-          <span className={styles.highlight}>1,420</span> orders
+          <span className={styles.highlight}>{totalCount}</span> orders
         </span>
 
         <div className={styles.btnGroup}>
           <button
             disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             className={styles.pageNavBtn}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -182,29 +204,25 @@ export function SalesDataTable() {
 
           <button
             onClick={() => setCurrentPage(1)}
-            className={`${styles.numBtn} ${styles.activePage}`}
+            className={`${styles.numBtn} ${currentPage === 1 ? styles.activePage : ""}`}
           >
             1
           </button>
           <button
             onClick={() => setCurrentPage(2)}
-            className={styles.numBtn}
+            className={`${styles.numBtn} ${currentPage === 2 ? styles.activePage : ""}`}
           >
             2
           </button>
           <button
             onClick={() => setCurrentPage(3)}
-            className={styles.numBtn}
+            className={`${styles.numBtn} ${currentPage === 3 ? styles.activePage : ""}`}
           >
             3
           </button>
-          <span style={{ padding: "0 0.25rem", color: "#a1a1aa", fontWeight: 700 }}>...</span>
-          <button className={styles.numBtn}>
-            237
-          </button>
 
           <button
-            onClick={() => setCurrentPage((p) => p + 1)}
+            onClick={() => setCurrentPage(currentPage + 1)}
             className={styles.pageNavBtn}
           >
             <span>Next</span>
