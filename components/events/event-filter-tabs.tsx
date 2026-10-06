@@ -6,13 +6,13 @@ import styles from "./event-filter-tabs.module.scss";
 interface EventFilterTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  counts?: Record<string, number>;
+  counts?: Record<string, number | undefined>;
 }
 
 export function EventFilterTabs({
   activeTab,
   onTabChange,
-  counts = { All: 4, Live: 1, Upcoming: 2, Past: 1, Draft: 0 },
+  counts = {},
 }: EventFilterTabsProps) {
   const tabs = ["All", "Live", "Upcoming", "Past", "Draft"];
 
@@ -20,7 +20,7 @@ export function EventFilterTabs({
     <div className={styles.tabsRow}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab;
-        const count = counts[tab] ?? 0;
+        const count = counts[tab];
         return (
           <button
             key={tab}
@@ -28,9 +28,9 @@ export function EventFilterTabs({
             className={`${styles.tabBtn} ${isActive ? styles.active : ""}`}
           >
             <span>{tab}</span>
-            <span className={styles.countBadge}>
-              {count}
-            </span>
+            {count !== undefined && (
+              <span className={styles.countBadge}>{count}</span>
+            )}
           </button>
         );
       })}

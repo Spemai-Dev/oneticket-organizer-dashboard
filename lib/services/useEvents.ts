@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getALLevent, getEventDetails, geteventVolume, getPartiDetails } from "./dashboard";
 import { getToken } from "../auth";
 import { CURRENT_EVENT, MOCK_EVENTS } from "../mock-data";
+import { getImageUrl } from "../utils";
 import { Event } from "../../types";
 
 export function useDashboardData() {
@@ -35,7 +36,7 @@ export function useDashboardData() {
             city: 'Colombo',
             category: item.category || 'Music Festival',
             status: item.is_active ? 'Live' : 'Upcoming',
-            imageUrl: item.event_banner ? `https://storage.googleapis.com/oneticket/${item.event_banner}` : CURRENT_EVENT.imageUrl,
+            imageUrl: getImageUrl(item.poster_image || item.event_banner || item.banner_image || item.event_image || item.imageUrl, CURRENT_EVENT.imageUrl),
             soldCount: item.sold_tickets || 3240,
             totalCapacity: item.total_capacity || 4000,
             projectedSellOutDate: '12 Sep 2026',

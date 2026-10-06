@@ -2,7 +2,20 @@ import axios from "axios";
 import { base_url_new } from "../environment";
 import { getToken } from "../auth";
 
+export function buildQueryString(params?: string | Record<string, any>): string {
+  if (!params) return "";
+  if (typeof params === "string") return params.startsWith("?") ? params.substring(1) : params;
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, String(value));
+    }
+  });
+  return searchParams.toString();
+}
+
 export async function unauth_add(endpoint: string, data: any) {
+
   try {
     const response = await axios.post(base_url_new + endpoint, data, {
       headers: {

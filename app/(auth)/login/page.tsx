@@ -11,8 +11,8 @@ import { setToken } from "../../../lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("olivia@spemai.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -72,8 +72,8 @@ export default function LoginPage() {
   };
 
   const handleDemoLogin = () => {
-    setEmail("olivia@spemai.com");
-    setPassword("password123");
+    setEmail("");
+    setPassword("");
     setLoading(true);
     setToken("demo-auth-token-one-ticket");
     setTimeout(() => {
@@ -83,7 +83,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1 text-center">
+      <div className="flex flex-col items-center gap-1.5 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+
         <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
           OneTicket Sign In
         </h2>

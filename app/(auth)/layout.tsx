@@ -1,5 +1,4 @@
 import React from "react";
-import { Ticket as LogoIcon } from "lucide-react";
 
 export default function AuthLayout({
   children,
@@ -13,11 +12,13 @@ export default function AuthLayout({
       <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-[#00d07d]/15 blur-3xl pointer-events-none" />
 
       {/* Brand Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-10 w-10 rounded-xl bg-[#00d07d] flex items-center justify-center text-[#041c14] shadow-lg shadow-[#00d07d]/20">
-          <LogoIcon className="h-6 w-6 stroke-[2.5]" />
-        </div>
-        <span className="text-2xl font-bold text-white tracking-tight">OneTicket</span>
+      <div className="flex items-center justify-center mb-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/oneticket_logo.png"
+          alt="OneTicket"
+          className="h-12 w-auto object-contain drop-shadow-lg"
+        />
       </div>
 
       {/* Centered Auth Card Container */}

@@ -11,10 +11,14 @@ interface TopbarHeaderProps {
 }
 
 export function TopbarHeader({ actionButton }: TopbarHeaderProps) {
-  const { handleLogout, eventData } = useDashboard();
+  const { handleLogout, eventData, analytics, events, selectedEventId } = useDashboard();
 
-  const activeEventName = eventData?.event_name || "Neon Nights Vol. 3";
-  const currency = eventData?.tickets_currency || "LKR";
+  const activeEventName =
+    eventData?.event_name ||
+    analytics?.event?.event_name ||
+    events.find((e) => String(e.event_details || e.id || e.event_id) === String(selectedEventId))?.event_name ||
+    "Active Event";
+  const currency = analytics?.event?.currency || eventData?.tickets_currency || "LKR";
 
   return (
     <header className={styles.headerContainer}>

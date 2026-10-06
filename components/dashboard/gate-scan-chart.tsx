@@ -9,26 +9,52 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useDashboard } from "../../lib/context/dashboard-context";
+import { formatNumber } from "../../lib/utils";
 import styles from "./gate-scan-chart.module.scss";
-
-const SCAN_TIMELINE_DATA = [
-  { time: "6:00 PM", scans: 45, total: 45 },
-  { time: "6:30 PM", scans: 120, total: 165 },
-  { time: "7:00 PM", scans: 280, total: 445 },
-  { time: "7:30 PM", scans: 410, total: 855 },
-  { time: "8:00 PM", scans: 560, total: 1415 },
-  { time: "8:30 PM", scans: 390, total: 1805 },
-  { time: "9:00 PM", scans: 210, total: 2015 },
-  { time: "9:30 PM", scans: 95, total: 2110 },
-  { time: "10:00 PM", scans: 30, total: 2140 },
-];
 
 export function GateScanChart() {
   const [mounted, setMounted] = useState(false);
+  const { ticketStatus, tickets, volume, analytics } = useDashboard();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Compute live total scanned and capacity from getEventS (event-checking-status API)
+  const rawCheckingStatus = Array.isArray(ticketStatus)
+    ? ticketStatus
+    : Array.isArray(ticketStatus?.data)
+    ? ticketStatus.data
+    : Array.isArray(ticketStatus?.tiers)
+    ? ticketStatus.tiers
+    : Array.isArray(analytics?.ticket_category_scan_status)
+    ? analytics.ticket_category_scan_status
+    : Array.isArray(tickets)
+    ? tickets
+    : [];
+
+  let liveScanned = 0;
+  let liveCapacity = 0;
+
+  if (rawCheckingStatus.length > 0) {
+    rawCheckingStatus.forEach((item: any) => {
+      liveScanned += Math.round(Number(item.checked_in_ticket_count ?? item.scanned_count ?? item.scanned ?? item.checked_in ?? item.sold_tickets ?? 0));
+      liveCapacity += Math.round(Number(item.purchased_ticket_count ?? item.total_tickets ?? item.total_count ?? item.total ?? item.capacity ?? 0));
+    });
+  } else if (volume) {
+    liveScanned = Number(volume.total_tickets || 0);
+    liveCapacity = Number(volume.total_tickets || 0);
+  }
+
+  const finalTimeline = [
+    { time: "Start", scans: 0, total: 0 },
+    { time: "Current", scans: liveScanned, total: liveScanned },
+  ];
+
+  const scannedText = `${formatNumber(liveScanned)} / ${formatNumber(liveCapacity)}`;
+  const peakText = `${formatNumber(liveScanned)} scans`;
+  const efficiency = liveCapacity > 0 ? Math.round((liveScanned / liveCapacity) * 100) : 0;
 
   return (
     <div className={styles.cardContainer}>
@@ -40,10 +66,10 @@ export function GateScanChart() {
         <div className={styles.badgeGroup}>
           <span className={styles.liveBadge}>
             <span className={styles.dot} />
-            Peak: 560 scans/hr
+            Total Scanned: {peakText}
           </span>
           <span className={styles.speedBadge}>
-            Avg 1.2s per scan
+            Live Scanner Feed
           </span>
         </div>
       </div>
@@ -53,7 +79,7 @@ export function GateScanChart() {
         {mounted ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={SCAN_TIMELINE_DATA}
+              data={finalTimeline}
               margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
             >
               <defs>
@@ -80,8 +106,7 @@ export function GateScanChart() {
                     return (
                       <div className="bg-zinc-900 text-white p-2.5 rounded-xl text-xs shadow-xl border border-zinc-800">
                         <p className="font-bold text-[#00d07d]">{data.time}</p>
-                        <p className="mt-1 font-semibold">{data.scans} scans/hr</p>
-                        <p className="text-zinc-400">Cumulative: {data.total} scanned</p>
+                        <p className="mt-1 font-semibold">{data.scans} total scans</p>
                       </div>
                     );
                   }
@@ -108,15 +133,15 @@ export function GateScanChart() {
       <div className={styles.metricsRow}>
         <div className={styles.metricBox}>
           <span className={styles.label}>TOTAL SCANNED</span>
-          <span className={styles.value}>2,140 / 3,240</span>
+          <span className={styles.value}>{scannedText}</span>
         </div>
         <div className={styles.metricBox}>
-          <span className={styles.label}>PEAK WINDOW</span>
-          <span className={styles.value}>8:00 - 8:30 PM</span>
+          <span className={styles.label}>CHECK-IN RATE</span>
+          <span className={styles.value}>{efficiency}% Checked In</span>
         </div>
         <div className={styles.metricBox}>
-          <span className={styles.label}>GATE EFFICIENCY</span>
-          <span className={styles.value} style={{ color: "#00d07d" }}>98.4% Valid</span>
+          <span className={styles.label}>GATE STATUS</span>
+          <span className={styles.value} style={{ color: "#00d07d" }}>Active & Verified</span>
         </div>
       </div>
     </div>

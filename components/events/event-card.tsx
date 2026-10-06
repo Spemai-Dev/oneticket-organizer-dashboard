@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Event } from "../../types";
-import { formatNumber } from "../../lib/utils";
+import { formatNumber, formatAmount } from "../../lib/utils";
 import styles from "./event-card.module.scss";
 
 interface EventCardProps {
@@ -10,8 +10,13 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const percentSold = Math.round((event.soldCount / event.totalCapacity) * 100);
-  const grossRevenue = event.soldCount * 8500; // Calculated gross revenue
+  const sold = Number(event.soldCount || 0);
+  const total = Number(event.totalCapacity || 1);
+  const percentSold = total > 0 ? Math.min(100, Math.round((sold / total) * 100)) : 0;
+  const currency = event.currency || "LKR";
+  const grossRevenue = event.grossRevenue !== undefined && event.grossRevenue > 0
+    ? Number(event.grossRevenue)
+    : sold * 8500;
 
   const getStatusBadge = (status: string) => {
     const isLive = status === "Live";
@@ -87,7 +92,7 @@ export function EventCard({ event }: EventCardProps) {
       <div className={styles.revenueSection}>
         <span className={styles.revenueLabel}>GROSS REVENUE</span>
         <h4 className={styles.revenueAmount}>
-          Rs. {formatNumber(grossRevenue || 27540000)}
+          {currency} {formatAmount(grossRevenue)}
         </h4>
       </div>
     </div>

@@ -1,39 +1,91 @@
 "use client";
 
 import React from "react";
+import { MapPin, Calendar, Clock } from "lucide-react";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { CURRENT_EVENT } from "../../lib/mock-data";
 import { environment } from "../../lib/environment";
-import { formatNumber } from "../../lib/utils";
+import { formatNumber, formatAmount, getImageUrl } from "../../lib/utils";
 import styles from "./hero-banner.module.scss";
 
 export function HeroBanner() {
-  const { eventData, volume, tickets } = useDashboard();
+  const {
+    eventData,
+    volume,
+    tickets,
+    analytics,
+    venues,
+    selectedVenueIndex,
+    selectedDayIndex,
+    selectedTimeIndex,
+  } = useDashboard();
 
-  const title = eventData?.event_name || CURRENT_EVENT.title;
-  const subtitle = eventData?.event_description || CURRENT_EVENT.subtitle;
-  const category = eventData?.category || CURRENT_EVENT.category;
-  const eventCode = eventData?.event_code || CURRENT_EVENT.code;
-  const currency = eventData?.tickets_currency || "LKR";
+  const title = analytics?.event?.event_name || eventData?.event_name || "Event Overview";
+  const subtitle = eventData?.event_description || "Event Details & Sales Telemetry";
+  const category = analytics?.event?.category_name || eventData?.category || "Event";
+  const eventCode = analytics?.event?.event_details || eventData?.event_code || "";
+  const currency = analytics?.event?.currency || eventData?.tickets_currency || "LKR";
 
-  const bannerImg = eventData?.event_banner
-    ? `${environment.aws}/${eventData.event_banner.replace(/^\//, '')}`
-    : CURRENT_EVENT.imageUrl;
+  // Selected schedule filter venue, day, time or fallback to event metadata
+  const selectedVenueName =
+    venues?.[selectedVenueIndex]?.venue ||
+    eventData?.venue_name ||
+    eventData?.venue ||
+    eventData?.location ||
+    analytics?.event?.venue_name ||
+    "Main Venue";
 
-  const soldCount = volume?.total_tickets ?? volume?.venue_total_tickets ?? CURRENT_EVENT.soldCount;
-  const totalCapacity = eventData?.total_capacity || CURRENT_EVENT.totalCapacity;
+  const selectedDayObj = venues?.[selectedVenueIndex]?.days?.[selectedDayIndex];
+  const rawDateVal =
+    selectedDayObj?.day ||
+    eventData?.event_date ||
+    eventData?.event_datetime ||
+    eventData?.date;
 
-  const percentSold = Math.min(100, Math.round((soldCount / totalCapacity) * 1000) / 10);
-  const leftCount = Math.max(0, totalCapacity - soldCount);
+  let displayDate = "TBA";
+  if (rawDateVal) {
+    try {
+      const d = new Date(rawDateVal);
+      displayDate = !isNaN(d.getTime())
+        ? d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+        : String(rawDateVal);
+    } catch {
+      displayDate = String(rawDateVal);
+    }
+  }
 
-  // Render tickets or fall back to mock tiers
-  const tierList = tickets.length > 0
+  const selectedTimeObj = selectedDayObj?.times?.[selectedTimeIndex];
+  const displayTime = selectedTimeObj
+    ? `${selectedTimeObj.start_time}${selectedTimeObj.end_time ? ` - ${selectedTimeObj.end_time}` : ""}`
+    : eventData?.time || "All Day";
+
+  const imagePath = eventData?.poster_image || eventData?.event_banner || analytics?.event?.poster_image || analytics?.event?.event_banner || eventData?.imageUrl;
+  const bannerImg = getImageUrl(imagePath, CURRENT_EVENT.imageUrl);
+
+  const soldCount = analytics?.summary?.tickets_sold ?? volume?.total_tickets ?? volume?.venue_total_tickets ?? 0;
+  const totalCapacity = analytics?.summary?.ticket_capacity ?? eventData?.total_capacity ?? 0;
+
+  const percentSold = analytics?.summary?.sell_through_percentage ?? (
+    totalCapacity > 0 ? Math.min(100, Math.round((soldCount / totalCapacity) * 1000) / 10) : 0
+  );
+  const leftCount = analytics?.summary?.tickets_left ?? Math.max(0, totalCapacity - soldCount);
+  const grossSale = analytics?.summary?.gross_ticket_sale ?? volume?.total_amount ?? volume?.venue_total_amount ?? 0;
+
+  // Render ticket tiers from analytics or tickets state
+  const apiTiers = analytics?.event?.ticket_tiers;
+  const tierList = Array.isArray(apiTiers) && apiTiers.length > 0
+    ? apiTiers.map((t: any) => ({
+        id: t.id,
+        name: t.ticket_name,
+        price: Number(t.ticket_amount || 0),
+      }))
+    : tickets.length > 0
     ? tickets.map((t: any) => ({
         id: t.id,
         name: t.ticket_name,
         price: Number(t.ticket_amount || 0),
       }))
-    : CURRENT_EVENT.ticketTiers;
+    : [];
 
   return (
     <div className={styles.heroCard}>
@@ -70,14 +122,29 @@ export function HeroBanner() {
             </span>
           </div>
 
-          {/* Title & Subtitle */}
+          {/* Title & Location / Date / Time Info */}
           <div className={styles.headerInfo}>
             <h2 className={styles.title}>
               {title}
             </h2>
-            <p className={styles.details}>
-              Currency: {currency} {eventData?.event_expire_on ? `· Expire: ${new Date(eventData.event_expire_on).toLocaleDateString()}` : ''}
-            </p>
+            <div className={styles.metaLocationRow}>
+              <span className={styles.metaItem}>
+                <MapPin className="h-3.5 w-3.5 text-[#00d07d]" />
+                <span>{selectedVenueName}</span>
+              </span>
+              <span>·</span>
+              <span className={styles.metaItem}>
+                <Calendar className="h-3.5 w-3.5 text-[#00d07d]" />
+                <span>{displayDate}</span>
+              </span>
+              <span>·</span>
+              <span className={styles.metaItem}>
+                <Clock className="h-3.5 w-3.5 text-[#00d07d]" />
+                <span>{displayTime}</span>
+              </span>
+              <span>·</span>
+              <span>Currency: <strong className="text-white">{currency}</strong></span>
+            </div>
           </div>
 
           {/* Pricing Pills */}
@@ -85,7 +152,7 @@ export function HeroBanner() {
             {tierList.map((tier) => (
               <div key={tier.id} className={styles.pricingPill}>
                 <span>{tier.name} </span>
-                <span className={styles.priceAmount}>{currency} {formatNumber(tier.price)}</span>
+                <span className={styles.priceAmount}>{currency} {formatAmount(tier.price)}</span>
               </div>
             ))}
           </div>
@@ -110,7 +177,7 @@ export function HeroBanner() {
               <div className={styles.progressBarTrack}>
                 <div
                   className={styles.progressBarFill}
-                  style={{ width: `${percentSold}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, percentSold))}%` }}
                 />
               </div>
             </div>
@@ -121,7 +188,7 @@ export function HeroBanner() {
                 TOTAL VENUE REVENUE
               </span>
               <span className={styles.date}>
-                {currency} {formatNumber(volume?.total_amount || volume?.venue_total_amount || 27540000)}
+                {currency} {formatAmount(grossSale)}
               </span>
               <span className={styles.paceStatus}>
                 Live Sales Telemetry

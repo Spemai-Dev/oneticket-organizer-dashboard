@@ -9,10 +9,10 @@ import { SalesVelocityChart } from "../../../components/dashboard/sales-velocity
 import { PaymentMethodDonut } from "../../../components/dashboard/payment-method-donut";
 import { SalesDataTable } from "../../../components/sales/sales-data-table";
 import { useDashboard } from "../../../lib/context/dashboard-context";
-import { download } from "../../../lib/services/dashboard";
+import { download, downloadNotifyReport } from "../../../lib/services/dashboard";
 
 export default function TicketSalesPage() {
-  const { selectedEventId } = useDashboard();
+  const { selectedEventId, dataType } = useDashboard();
 
   const handleExportCSV = async () => {
     if (!selectedEventId) {
@@ -20,7 +20,11 @@ export default function TicketSalesPage() {
       return;
     }
     try {
-      await download(selectedEventId);
+      if (dataType === "notifies") {
+        await downloadNotifyReport(selectedEventId);
+      } else {
+        await download(selectedEventId);
+      }
     } catch (err) {
       console.error("Export error:", err);
     }
@@ -32,7 +36,7 @@ export default function TicketSalesPage() {
       className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 shadow-sm transition-all cursor-pointer"
     >
       <Download className="h-3.5 w-3.5" />
-      <span>Export Report</span>
+      <span>{dataType === "notifies" ? "Export Notify Report" : "Export Report"}</span>
     </button>
   );
 

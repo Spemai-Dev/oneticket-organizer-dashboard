@@ -24,6 +24,8 @@ export interface Event {
   totalCapacity: number;
   projectedSellOutDate: string;
   paceStatus: string;
+  grossRevenue?: number;
+  currency?: string;
 }
 
 export interface Order {
@@ -70,3 +72,6 @@ export interface PaymentMethodStat {
   percentage: number;
   color: string;
 }
+
+export * from "./api";
+

@@ -12,7 +12,6 @@ import {
   Ticket,
   Wallet,
   Settings,
-  Plus,
   Ticket as LogoIcon,
   X
 } from "lucide-react";
@@ -122,11 +121,6 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
 
       {/* Bottom Actions & Profile */}
       <div className={styles.bottomSection}>
-        <button className={styles.newEventBtn}>
-          <Plus className="h-4 w-4 stroke-[3]" />
-          <span>New event</span>
-        </button>
-
         <div className={styles.profileCard}>
           <Avatar fallback="A" size="sm" className="bg-[#00d07d] text-[#041c14] font-bold" />
           <div className={styles.profileInfo}>
