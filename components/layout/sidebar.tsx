@@ -16,6 +16,7 @@ import {
   X
 } from "lucide-react";
 import { Avatar } from "../ui/avatar";
+import { useDashboard } from "../../lib/context/dashboard-context";
 import styles from "./sidebar.module.scss";
 
 interface NavItem {
@@ -62,6 +63,30 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
+  const { eventData, analytics, events } = useDashboard();
+
+  const activeEvent =
+    eventData ||
+    analytics?.event ||
+    events.find((e) => e.organizer_name || e.merchant_name || e.organizer) ||
+    events[0];
+
+  const merchantName =
+    activeEvent?.organizer_name ||
+    activeEvent?.merchant_name ||
+    activeEvent?.organizer ||
+    activeEvent?.company_name ||
+    analytics?.event?.organizer_name ||
+    analytics?.event?.merchant_name ||
+    "Merchant Organizer";
+
+  const userName =
+    activeEvent?.contact_person ||
+    activeEvent?.user_name ||
+    (activeEvent?.organizer_email ? activeEvent.organizer_email.split("@")[0] : null) ||
+    "Merchant Admin";
+
+  const fallbackLetter = (userName[0] || merchantName[0] || "M").toUpperCase();
 
   const sidebarContent = (
     <div className={styles.sidebarWrapper}>
@@ -122,10 +147,10 @@ export function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
       {/* Bottom Actions & Profile */}
       <div className={styles.bottomSection}>
         <div className={styles.profileCard}>
-          <Avatar fallback="A" size="sm" className="bg-[#00d07d] text-[#041c14] font-bold" />
+          <Avatar fallback={fallbackLetter} size="sm" className="bg-[#00d07d] text-[#041c14] font-bold" />
           <div className={styles.profileInfo}>
-            <span className={styles.userName}>Amila</span>
-            <span className={styles.orgName}>Confront Events</span>
+            <span className={styles.userName}>{userName}</span>
+            <span className={styles.orgName}>{merchantName}</span>
           </div>
         </div>
       </div>

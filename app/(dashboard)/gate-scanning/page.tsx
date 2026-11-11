@@ -19,14 +19,14 @@ export default function GateScanningPage() {
   const rawCheckingStatus = Array.isArray(ticketStatus)
     ? ticketStatus
     : Array.isArray(ticketStatus?.data)
-    ? ticketStatus.data
-    : Array.isArray(ticketStatus?.tiers)
-    ? ticketStatus.tiers
-    : Array.isArray(analytics?.ticket_category_scan_status)
-    ? analytics.ticket_category_scan_status
-    : Array.isArray(tickets)
-    ? tickets
-    : [];
+      ? ticketStatus.data
+      : Array.isArray(ticketStatus?.tiers)
+        ? ticketStatus.tiers
+        : Array.isArray(analytics?.ticket_category_scan_status)
+          ? analytics.ticket_category_scan_status
+          : Array.isArray(tickets)
+            ? tickets
+            : [];
 
   const gateTerminals = rawCheckingStatus.map((item: any, idx: number) => {
     const name = item.name || item.ticket_name || item.category || `Category #${item.id || idx + 1}`;
@@ -79,6 +79,8 @@ export default function GateScanningPage() {
           <GateScanChart />
         </div>
         <div className="lg:col-span-1">
+
+
           <ScanCountCard />
         </div>
       </div>
