@@ -113,10 +113,10 @@ function normalizeVenues(rawVenues: any): Venue[] {
       day: d?.day || "",
       times: Array.isArray(d?.times)
         ? d.times.map((t: any) => ({
-            start_time: t?.start_time || "",
-            end_time: t?.end_time || "",
-            key: sanitizeVenueKey(t?.key ?? t?.venue_key) || "",
-          }))
+          start_time: t?.start_time || "",
+          end_time: t?.end_time || "",
+          key: sanitizeVenueKey(t?.key ?? t?.venue_key) || "",
+        }))
         : [],
     }));
     return {
@@ -387,8 +387,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       venueKey !== undefined
         ? sanitizeVenueKey(venueKey)
         : sanitizeVenueKey(selectedKeyRef.current) ||
-          findFirstVenueSelection(venuesRef.current)?.key ||
-          sanitizeVenueKey(eventDataRef.current?.venue_key);
+        findFirstVenueSelection(venuesRef.current)?.key ||
+        sanitizeVenueKey(eventDataRef.current?.venue_key);
 
     try {
       // If no venue_key was found from event-detail, check event-analytics for venues/venue_key first
@@ -429,14 +429,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         !activeKey && preFetchedAnalyticsRes
           ? preFetchedAnalyticsRes
           : await getEventAnalytics(
-              jsonToUrlParams(activeKey ? { id: eventId, venue_key: activeKey } : { id: eventId })
-            );
+            jsonToUrlParams(activeKey ? { id: eventId, venue_key: activeKey } : { id: eventId })
+          );
       if (requestId !== telemetryRequestIdRef.current) return;
       if (isValidApiResponse(analyticsRes) && analyticsRes?.data) {
         const analyticsData = analyticsRes.data.data || analyticsRes.data;
         setAnalytics(analyticsData);
 
-        // Merge analytics event details into eventData if present
         if (analyticsData?.event) {
           setEventData((prev: any) => ({
             ...(prev || {}),
@@ -580,14 +579,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const details = Array.isArray(rawDetails) ? rawDetails[0] : rawDetails;
       const validDetails =
         details &&
-        typeof details === "object" &&
-        !(
-          typeof details.status === "number" &&
-          details.status >= 400 &&
-          !details.id &&
-          !details.event_name &&
-          !details.venues
-        )
+          typeof details === "object" &&
+          !(
+            typeof details.status === "number" &&
+            details.status >= 400 &&
+            !details.id &&
+            !details.event_name &&
+            !details.venues
+          )
           ? details
           : null;
 

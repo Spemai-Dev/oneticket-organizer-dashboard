@@ -5,7 +5,6 @@ import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatNumber, formatAmount } from "../../lib/utils";
-import styles from "./metric-card.module.scss";
 
 export function GrossSaleCard() {
   const { volume, eventData, analytics, selectedKey } = useDashboard();
@@ -61,56 +60,55 @@ export function GrossSaleCard() {
   const trend7d = analytics?.trend_7d_percentage ?? analytics?.summary?.trend_7d_percentage;
 
   return (
-    <div className={styles.cardContainer}>
-      <div className={styles.cardHeader}>
-        <span className={styles.headerTitle}>
+    <div className="flex flex-col justify-between gap-5 rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           GROSS TICKET SALE
         </span>
-        <span className={styles.datePill}>
+        <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
           {currency} Live Telemetry
         </span>
       </div>
 
       <div>
-        <h3 className={styles.mainValue}>
+        <h3 className="text-2xl font-extrabold tracking-tight text-zinc-900 sm:text-3xl dark:text-white">
           {currency} {formatAmount(grossSale)}
         </h3>
-        <div className={styles.metaRow}>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <Badge variant="emerald">{formatNumber(ticketsSold)} tickets sold</Badge>
           <span>Net Sale: {currency} {formatAmount(netSale)} · {refundCount} Refunds</span>
         </div>
       </div>
 
-      {/* 4 Inner Stats Cards */}
-      <div className={styles.innerStatsGrid}>
-        <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Today so far</p>
-          <p className={styles.statValue}>{currency} {formatAmount(todayAmount)}</p>
-          <p className={styles.statSubtext}>{formatNumber(todayTickets)} tickets</p>
+      <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <p className="text-[10px] font-semibold text-zinc-400">Today so far</p>
+          <p className="mt-0.5 text-sm font-bold text-zinc-900 dark:text-zinc-100">{currency} {formatAmount(todayAmount)}</p>
+          <p className="mt-0.5 text-[10px] text-zinc-500">{formatNumber(todayTickets)} tickets</p>
         </div>
 
-        <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Yesterday</p>
-          <p className={styles.statValue}>{currency} {formatAmount(yesterdayAmount)}</p>
-          <p className={styles.statSubtext}>{formatNumber(yesterdayTickets)} tickets</p>
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <p className="text-[10px] font-semibold text-zinc-400">Yesterday</p>
+          <p className="mt-0.5 text-sm font-bold text-zinc-900 dark:text-zinc-100">{currency} {formatAmount(yesterdayAmount)}</p>
+          <p className="mt-0.5 text-[10px] text-zinc-500">{formatNumber(yesterdayTickets)} tickets</p>
         </div>
 
-        <div className={styles.innerStatCard}>
-          <p className={styles.statLabel}>Average Ticket Size</p>
-          <p className={styles.statValue}>
+        <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <p className="text-[10px] font-semibold text-zinc-400">Average Ticket Size</p>
+          <p className="mt-0.5 text-sm font-bold text-zinc-900 dark:text-zinc-100">
             {currency} {formatAmount(avgValue)}
           </p>
-          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+          <p className="mt-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
             Real-time average
           </p>
         </div>
 
-        <div className={styles.trendCard}>
-          <p className={styles.trendLabel}>7-day trend</p>
-          <p className={styles.trendValue}>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">7-day trend</p>
+          <p className="mt-0.5 text-sm font-bold text-emerald-700 dark:text-emerald-300">
             {trend7d != null ? `${trend7d >= 0 ? "↑ " : "↓ "}${trend7d}%` : `${currency} ${formatAmount(netSale)}`}
           </p>
-          <p className={styles.trendSubtext}>
+          <p className="mt-0.5 text-[10px] text-emerald-600/80 dark:text-emerald-400/80">
             {trend7d != null ? "vs prior week" : `${refundCount} Refunds`}
           </p>
         </div>
@@ -171,9 +169,9 @@ export function RunRateCard() {
   }
 
   return (
-    <div className={styles.cardContainer}>
-      <div className={styles.cardHeader}>
-        <span className={styles.headerTitle}>
+    <div className="flex flex-col justify-between gap-5 rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           RUN RATE TO EVENT DAY
         </span>
         <Badge variant={isAhead ? "emerald" : "blue"}>
@@ -181,34 +179,33 @@ export function RunRateCard() {
         </Badge>
       </div>
 
-      <div className={styles.paceContainer}>
-        <div className={styles.paceItem}>
-          <div className={styles.paceHeader}>
-            <span className={styles.label}>Current pace</span>
-            <span className={styles.value}>{formatPace(currentPace)}</span>
+      <div className="flex flex-col gap-4">
+        <div>
+          <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
+            <span className="text-zinc-500 dark:text-zinc-400">Current pace</span>
+            <span className="font-bold text-zinc-900 dark:text-zinc-100">{formatPace(currentPace)}</span>
           </div>
           <Progress value={currentPacePercent} barClassName="bg-[#00d07d]" className="h-2.5" />
         </div>
 
-        <div className={styles.paceItem}>
-          <div className={styles.paceHeader}>
-            <span className={styles.label}>Needed to sell out</span>
-            <span className={styles.value}>{formatPace(neededPerDay)}</span>
+        <div>
+          <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
+            <span className="text-zinc-500 dark:text-zinc-400">Needed to sell out</span>
+            <span className="font-bold text-zinc-900 dark:text-zinc-100">{formatPace(neededPerDay)}</span>
           </div>
           <Progress value={neededPacePercent} barClassName="bg-zinc-200 dark:bg-zinc-700" className="h-2.5" />
         </div>
       </div>
 
-      {/* Circle summary box & Run Rate Metrics */}
-      <div className={styles.summaryBox}>
-        <div className={styles.circleBadge}>
+      <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3.5 dark:border-emerald-900/30 dark:bg-emerald-950/30">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#00d07d] bg-white text-xs font-bold text-[#041c14] shadow-sm dark:bg-zinc-900 dark:text-[#00d07d]">
           {percentSold}%
         </div>
-        <div className={styles.summaryText}>
-          <span className={styles.title}>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
             {formatNumber(ticketsLeft)} tickets left
           </span>
-          <span className={styles.subtitle}>
+          <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
             {sellOutText}
           </span>
         </div>

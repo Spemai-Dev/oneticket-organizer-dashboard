@@ -12,8 +12,6 @@ import {
 } from "recharts";
 import { SALES_VELOCITY_DATA } from "../../lib/mock-data";
 import { formatNumber, formatAmount } from "../../lib/utils";
-import styles from "./sales-velocity-chart.module.scss";
-
 import { useDashboard } from "../../lib/context/dashboard-context";
 
 interface SalesVelocityChartProps {
@@ -67,24 +65,23 @@ export function SalesVelocityChart({
     : Number(analytics?.summary?.tickets_sold || volume?.total_tickets || 0);
 
   return (
-    <div className={styles.cardContainer}>
-      <div className={styles.headerRow}>
-        <div className={styles.titleGroup}>
-          <h3 className={styles.title}>{title}</h3>
-          <p className={styles.subtitle}>{subtitle}</p>
+    <div className="flex h-full flex-col justify-between gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-base font-bold text-zinc-900 dark:text-white">{title}</h3>
+          <p className="text-xs text-zinc-500">{subtitle}</p>
         </div>
-        <div className={styles.badgeGroup}>
-          <span className={styles.revenueBadge}>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
             {currency} {formatAmount(totalRevenue)}
           </span>
-          <span className={styles.ticketsBadge}>
+          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             {formatNumber(totalTickets)} tickets
           </span>
         </div>
       </div>
 
-      {/* Chart container */}
-      <div className={styles.chartContainer}>
+      <div className="mt-2 h-48 w-full">
         {mounted ? (
           chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -140,12 +137,12 @@ export function SalesVelocityChart({
       </div>
 
       {showPeakInfo && (
-        <div className={styles.peakInfoRow}>
-          <span className={styles.peakLabel}>
-            <span className={styles.greenDot} />
+        <div className="flex items-center justify-between border-t border-zinc-100 pt-3 text-xs dark:border-zinc-800">
+          <span className="flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-300">
+            <span className="h-2 w-2 rounded-full bg-[#00d07d]" />
             Daily Velocity Active
           </span>
-          <span className={styles.pacingText}>
+          <span className="font-bold text-emerald-600 dark:text-emerald-400">
             30-Day Sales Telemetry
           </span>
         </div>

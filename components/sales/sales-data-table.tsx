@@ -24,49 +24,7 @@ import { TicketUpgradeModal } from "./ticket-upgrade-modal";
 import { TicketCancellationModal } from "./ticket-cancellation-modal";
 import { ResendConfirmationModal } from "./resend-confirmation-modal";
 import { RefundRequestModal } from "./refund-request-modal";
-import { ViewParticipantModal } from "./view-participant-modal";
 import styles from "./sales-data-table.module.scss";
-
-interface ParticipantListRow {
-  id?: number | string;
-  transaction_reference?: string;
-  datetime?: string;
-  customer_name?: string;
-  customer_email?: string;
-  qr_code?: string;
-  is_refund?: boolean;
-  is_refund_init?: boolean;
-  is_refund_rejected?: boolean;
-  is_refund_request_approved?: boolean;
-  refund_request_status?: string;
-  total_amount?: number | string;
-  is_checked_in?: boolean;
-}
-
-interface NotifyListRow {
-  id?: number | string;
-  first_name?: string;
-  last_name?: string;
-  name?: string;
-  email?: string;
-  phone_number?: string;
-  contact_number?: string;
-  phone?: string;
-  created_at?: string;
-}
-
-function getPageNumbers(current: number, total: number): (number | "...")[] {
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  if (current <= 3) {
-    return [1, 2, 3, 4, "...", total];
-  }
-  if (current >= total - 2) {
-    return [1, "...", total - 3, total - 2, total - 1, total];
-  }
-  return [1, "...", current - 1, current, current + 1, "...", total];
-}
 
 export function SalesDataTable() {
   const {
@@ -229,7 +187,7 @@ export function SalesDataTable() {
     : undefined;
 
   return (
-    <div className={styles.cardContainer}>
+    <div className="flex flex-col gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       {/* Top Tab Bar: Participants List vs Notify Me */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-2 pt-2 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-6">
@@ -275,10 +233,9 @@ export function SalesDataTable() {
       </div>
 
       {/* Filter Header Bar */}
-      <div className={styles.topFilterBar}>
-        {/* Search Input */}
-        <div className={styles.searchBox}>
-          <Search className={styles.searchIcon} />
+      <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder={
@@ -286,8 +243,8 @@ export function SalesDataTable() {
                 ? "Search notify me by name or email..."
                 : "Search ticket ref, participant name or email..."
             }
-            value={searchText}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
         </div>
@@ -295,43 +252,40 @@ export function SalesDataTable() {
         {/* Filters (Participants only) */}
         {dataType === "participants" && (
           <div className={styles.filterGroup}>
+            {/* Tier Tabs */}
             <div className={styles.tierTabs}>
-              {[
-                { label: "All Check-in", value: "" },
-                { label: "Checked In", value: "true" },
-                { label: "Pending", value: "false" },
-              ].map((opt) => (
+              {["All Tiers", "General", "VIP", "Gold"].map((tier) => (
                 <button
-                  key={opt.label}
-                  type="button"
-                  onClick={() => handleCheckInFilterChange(opt.value)}
-                  className={`${styles.tierBtn} ${checkInFilter === opt.value ? styles.active : ""}`}
+                  key={tier}
+                  onClick={() => setSelectedTier(tier)}
+                  className={`${styles.tierBtn} ${selectedTier === tier ? styles.active : ""}`}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
 
+            {/* Status Select Dropdown */}
             <div className={styles.selectWrapper}>
               <select
-                value={transactionStatusFilter}
-                onChange={(e) => handleStatusFilterChange(e.target.value)}
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
                 className={styles.selectInput}
               >
                 <option value="">Status: All</option>
                 <option value="completed">Status: Completed</option>
                 <option value="refunded">Status: Refunded</option>
               </select>
-              <ChevronDown className={styles.selectChevron} />
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
             </div>
           </div>
         )}
       </div>
 
       {/* Table Container */}
-      <div className={styles.tableWrapper}>
+      <div className="overflow-x-auto">
         {dataType === "participants" ? (
-          <table className={styles.table}>
+          <table className="w-full min-w-[900px] border-collapse text-left [&_td]:px-4 [&_td]:py-3.5 [&_th]:px-4 [&_th]:py-3 [&_thead_tr]:border-b [&_thead_tr]:border-zinc-100 [&_thead_tr]:text-[11px] [&_thead_tr]:font-bold [&_thead_tr]:tracking-wider [&_thead_tr]:text-zinc-400 [&_thead_tr]:uppercase dark:[&_thead_tr]:border-zinc-800 [&_tbody]:text-xs [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-100 [&_tbody_tr]:transition-colors [&_tbody_tr]:hover:bg-zinc-50/80 dark:[&_tbody_tr]:border-zinc-800 dark:[&_tbody_tr]:hover:bg-zinc-800/40">
             <thead>
               <tr>
                 <th>TICKET REFERENCE</th>
@@ -345,177 +299,118 @@ export function SalesDataTable() {
                 <th >ACTIONS</th>
               </tr>
             </thead>
-            <tbody className={participantsLoading ? "opacity-60 transition-opacity" : ""}>
-              {participantRows.length > 0 ? (
-                participantRows.map((p, idx) => {
-                  const rowKey = p.transaction_reference || String(p.id || idx);
-                  const qrCode = String(p.qr_code || "").trim();
-                  const isUrl = qrCode.startsWith("http://") || qrCode.startsWith("https://");
-                  const isCopied = copiedRef === rowKey;
-                  const refundMeta = getRefundStatusMeta(p);
-                  const formattedDate = p.datetime
-                    ? new Date(p.datetime).toLocaleString()
-                    : "N/A";
-
-                  return (
-                    <tr key={rowKey}>
-                      <td className={styles.tranId}>
+            <tbody>
+              {filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <tr key={order.id}>
+                    <td className={styles.tranId}>
+                      {order.transactionId}
+                    </td>
+                    <td>
+                      <div className={styles.attendeeCell}>
+                        <span className={styles.name}>
+                          {order.attendeeName}
+                        </span>
+                        <span className={styles.email}>{order.attendeeEmail}</span>
+                      </div>
+                    </td>
+                    <td>{getTierBadge(order.tier)}</td>
+                    <td style={{ fontWeight: 700 }}>
+                      {order.quantity}
+                    </td>
+                    <td>
+                      <div className={styles.gatewayCell}>
+                        {getGatewayDot(order.gatewayType)}
+                        <span>{order.gateway}</span>
+                      </div>
+                    </td>
+                    <td className={styles.amount}>
+                      Rs. {formatNumber(order.amount)}.00
+                    </td>
+                    <td style={{ color: "#71717a" }}>{order.timestamp}</td>
+                    <td>
+                      <StatusBadge status={order.status} />
+                    </td>
+                    <td style={{ textAlign: "right", position: "relative" }}>
+                      <div className="relative inline-block text-left">
                         <button
-                          type="button"
-                          onClick={() => handleOpenAction(p, "view")}
-                          className="hover:text-[#00d07d] transition-colors text-left cursor-pointer"
-                          title="View participant details"
+                          onClick={() => setActiveMenuId(activeMenuId === order.id ? null : order.id)}
+                          className={styles.actionBtn}
                         >
-                          {p.transaction_reference || "N/A"}
+                          <MoreVertical className="h-4 w-4" />
                         </button>
-                      </td>
-                      <td style={{ color: "#71717a" }}>{formattedDate}</td>
-                      <td>
-                        <div className={styles.attendeeCell}>
-                          <span className={styles.name}>
-                            {p.customer_name || "N/A"}
-                          </span>
-                          <span className={styles.email}>
-                            {p.customer_email || "N/A"}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        {qrCode ? (
-                          <div className="inline-flex items-center gap-1.5">
-                            {isUrl ? (
-                              <a
-                                href={qrCode}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
-                                title={qrCode}
-                              >
-                                {qrCode.length > 18 ? `${qrCode.slice(0, 18)}...` : qrCode}
-                              </a>
-                            ) : (
-                              <span className="text-xs font-mono text-zinc-600 dark:text-zinc-300" title={qrCode}>
-                                {qrCode.length > 18 ? `${qrCode.slice(0, 18)}...` : qrCode}
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopyQr(qrCode, rowKey, e)}
-                              title={isCopied ? "Copied!" : "Copy QR link"}
-                              aria-label={isCopied ? "Copied" : "Copy QR link"}
-                              className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                            >
-                              {isCopied ? (
-                                <Check className="h-3.5 w-3.5 text-[#00d07d]" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <Badge variant={p.is_refund ? "red" : "emerald"}>
-                          {p.is_refund ? "Refund" : "Paid"}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Badge variant={refundMeta.variant}>{refundMeta.label}</Badge>
-                      </td>
-                      <td className={styles.amount}>
-                        {formatAmount(Number(p.total_amount || 0))} {currency}
-                      </td>
-                      <td >
-                        <Badge variant={p.is_checked_in ? "emerald" : "gold"} style={{ fontSize: "8px" }}>
-                          {p.is_checked_in ? "Checked in" : "Check in pending"}
-                        </Badge>
-                      </td>
-                      <td style={{ textAlign: "right", position: "relative" }}>
-                        <div className="relative inline-block text-left">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveMenuId(activeMenuId === rowKey ? null : rowKey)
-                            }
-                            className={styles.actionBtn}
-                            aria-label="More participant actions"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
 
-                          {activeMenuId === rowKey && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-10 cursor-default"
-                                onClick={() => setActiveMenuId(null)}
-                              />
-                              <div className="absolute right-0 mt-1 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-20 py-1 flex flex-col text-xs">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "view")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <Eye className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                                  <span>View Participant</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "upgrade")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                                  <span>Upgrade Ticket</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "cancel")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-red-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                                  <span>Cancel Ticket</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "resend")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-blue-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <Send className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                                  <span>Resend Email/SMS</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "refund")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                  <span>Full Refund Request</span>
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
+                        {activeMenuId === rowKey && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-10 cursor-default"
+                              onClick={() => setActiveMenuId(null)}
+                            />
+                            <div className="absolute right-0 mt-1 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-20 py-1 flex flex-col text-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAction(p, "view")}
+                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                <span>View Participant</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAction(p, "upgrade")}
+                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                              >
+                                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                <span>Upgrade Ticket</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAction(p, "cancel")}
+                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-red-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                              >
+                                <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                                <span>Cancel Ticket</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAction(p, "resend")}
+                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-blue-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                              >
+                                <Send className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                                <span>Resend Email/SMS</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAction(p, "refund")}
+                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                <span>Full Refund Request</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
                 })
               ) : (
-                <tr>
-                  <td colSpan={9} style={{ padding: "2rem 0", textAlign: "center", color: "#a1a1aa" }}>
-                    {!selectedKey
-                      ? "No venue slot key selected. Select a venue/time slot to view participants."
-                      : participantsLoading
-                        ? "Loading participants..."
-                        : "No participants found matching your criteria."}
-                  </td>
-                </tr>
+              <tr>
+                <td colSpan={9} style={{ padding: "2rem 0", textAlign: "center", color: "#a1a1aa" }}>
+                  {!selectedKey
+                    ? "No venue slot key selected. Select a venue/time slot to view participants."
+                    : participantsLoading
+                      ? "Loading participants..."
+                      : "No participants found matching your criteria."}
+                </td>
+              </tr>
               )}
             </tbody>
           </table>
         ) : (
           /* Notify Me Table */
-          <table className={styles.table}>
+          <table className="w-full min-w-[900px] border-collapse text-left [&_td]:px-4 [&_td]:py-3.5 [&_th]:px-4 [&_th]:py-3 [&_thead_tr]:border-b [&_thead_tr]:border-zinc-100 [&_thead_tr]:text-[11px] [&_thead_tr]:font-bold [&_thead_tr]:tracking-wider [&_thead_tr]:text-zinc-400 [&_thead_tr]:uppercase dark:[&_thead_tr]:border-zinc-800 [&_tbody]:text-xs [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-100 [&_tbody_tr]:transition-colors [&_tbody_tr]:hover:bg-zinc-50/80 dark:[&_tbody_tr]:border-zinc-800 dark:[&_tbody_tr]:hover:bg-zinc-800/40">
             <thead>
               <tr>
                 <th>SERIAL NUMBER</th>
@@ -566,42 +461,45 @@ export function SalesDataTable() {
       <div className={styles.paginationFooter}>
         <span className={styles.showingText}>
           Showing <span className={styles.highlight}>{startItem}–{endItem}</span> of{" "}
-          <span className={styles.highlight}>{totalCount}</span>{" "}
-          {dataType === "notifies" ? "requests" : "participants"}
+          <span className={styles.highlight}>{totalCount}</span> {dataType === "notifies" ? "requests" : "participants"}
         </span>
 
-        <div className={styles.btnGroup}>
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             disabled={currentPage <= 1}
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            onClick={() => {
+              const newPage = Math.max(1, currentPage - 1);
+              setCurrentPage(newPage);
+              if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
+            }}
             className={`${styles.pageNavBtn} ${currentPage <= 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span>Previous</span>
           </button>
 
-          {pageNumbers.map((num, idx) =>
-            typeof num === "number" ? (
-              <button
-                key={num}
-                type="button"
-                onClick={() => setCurrentPage(num)}
-                className={`${styles.numBtn} ${currentPage === num ? styles.activePage : ""} cursor-pointer`}
-              >
-                {num}
-              </button>
-            ) : (
-              <span key={`ellipsis-${idx}`} className="px-1.5 text-zinc-400">
-                ...
-              </span>
-            )
-          )}
+          {pageNumbers.map((num) => (
+            <button
+              key={num}
+              onClick={() => {
+                setCurrentPage(num);
+                if (dataType === "notifies") fetchNotifies(selectedEventId, num);
+              }}
+              className={`${styles.numBtn} ${currentPage === num ? styles.activePage : ""} cursor-pointer`}
+            >
+              {num}
+            </button>
+          ))}
 
           <button
             type="button"
             disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            onClick={() => {
+              const newPage = Math.min(totalPages, currentPage + 1);
+              setCurrentPage(newPage);
+              if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
+            }}
             className={`${styles.pageNavBtn} ${currentPage >= totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
           >
             <span>Next</span>

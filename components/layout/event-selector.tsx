@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, Calendar, Search } from "lucide-react";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { MOCK_EVENTS } from "../../lib/mock-data";
-import styles from "./event-selector.module.scss";
 
 export function EventSelector() {
   const { events, selectedEventId, setSelectedEventId, eventData } = useDashboard();
@@ -42,14 +41,14 @@ export function EventSelector() {
   }, []);
 
   return (
-    <div className={styles.selectorWrapper} ref={containerRef}>
+    <div className="relative" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={styles.triggerBtn}
+        className="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
-        <Calendar className="h-3.5 w-3.5 text-[#00d07d] shrink-0" />
+        <Calendar className="h-3.5 w-3.5 shrink-0 text-[#00d07d]" />
         <span className="max-w-[160px] truncate">{activeTitle}</span>
-        <ChevronDown className={`${styles.chevronIcon} ${isOpen ? styles.open : ""}`} />
+        <ChevronDown className={`h-3.5 w-3.5 text-zinc-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
