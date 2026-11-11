@@ -123,17 +123,38 @@ export const geteventVolume = async (params: EventVolumeParams | string) => {
 };
 
 /**
+ * Checks whether a query string contains a non-empty, valid venue_key parameter.
+ */
+function hasVenueKey(queryString: string): boolean {
+  if (!queryString) return false;
+  const searchParams = new URLSearchParams(queryString);
+  const venueKey = searchParams.get("venue_key");
+  if (!venueKey) return false;
+  const trimmed = venueKey.trim();
+  return trimmed !== "" && trimmed !== "null" && trimmed !== "undefined";
+}
+
+/**
+ * Executes a GET request only when a valid venue_key is present in the query params.
+ */
+async function getWithRequiredVenueKey(endpoint: string, params: object | string) {
+  try {
+    const queryString = buildQueryString(params as Record<string, unknown> | string);
+    if (!hasVenueKey(queryString)) {
+      return null;
+    }
+    return await get(`${endpoint}?${queryString}`);
+  } catch (error) {
+    return error;
+  }
+}
+
+/**
  * Get Event Gate Checking Status (scan by tier)
  * Endpoint: GET /api/v3/organization/dashboard/event-checking-status/
  */
 export const getEventS = async (params: EventCheckingStatusParams | string) => {
-  try {
-    const queryString = buildQueryString(params);
-    const data = await get(`organization/dashboard/event-checking-status/?${queryString}`);
-    return data;
-  } catch (error) {
-    return error;
-  }
+  return getWithRequiredVenueKey("organization/dashboard/event-checking-status/", params);
 };
 
 // -------------------------------------------------------------
@@ -145,13 +166,7 @@ export const getEventS = async (params: EventCheckingStatusParams | string) => {
  * Endpoint: GET /api/v3/organization/dashboard/tickets-by-slot/
  */
 export const getTickent = async (params: TicketsBySlotParams | string) => {
-  try {
-    const queryString = buildQueryString(params);
-    const data = await get(`organization/dashboard/tickets-by-slot/?${queryString}`);
-    return data;
-  } catch (error) {
-    return error;
-  }
+  return getWithRequiredVenueKey("organization/dashboard/tickets-by-slot/", params);
 };
 
 /**
@@ -159,13 +174,7 @@ export const getTickent = async (params: TicketsBySlotParams | string) => {
  * Endpoint: GET /api/v3/organization/dashboard/event-participants/
  */
 export const getPartiDetails = async (params: EventParticipantsParams | string) => {
-  try {
-    const queryString = buildQueryString(params);
-    const data = await get(`organization/dashboard/event-participants/?${queryString}`);
-    return data;
-  } catch (error) {
-    return error;
-  }
+  return getWithRequiredVenueKey("organization/dashboard/event-participants/", params);
 };
 
 /**

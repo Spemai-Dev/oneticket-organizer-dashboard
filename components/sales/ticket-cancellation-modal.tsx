@@ -3,11 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { AlertTriangle, CheckCircle2, AlertCircle, Loader2, X } from "lucide-react";
 import { previewTicketCancellation, confirmTicketCancellation } from "../../lib/services/dashboard";
+import { isRefundUnavailable } from "../../lib/utils/participant-helpers";
+import { ParticipantDetailData, ParticipantTicketItem } from "../../types";
 
 interface TicketCancellationModalProps {
   isOpen: boolean;
   onClose: () => void;
   order?: any;
+  ticket?: ParticipantTicketItem | null;
+  viewData?: ParticipantDetailData | null;
+  onSuccess?: () => void;
   defaultTransactionId?: string;
   defaultCustomerEmail?: string;
 }
@@ -23,6 +28,9 @@ export function TicketCancellationModal({
   isOpen,
   onClose,
   order,
+  ticket,
+  viewData,
+  onSuccess,
   defaultTransactionId = "R0VP1192CE2B5DCE8C15C",
   defaultCustomerEmail = "customer@example.com",
 }: TicketCancellationModalProps) {
@@ -42,17 +50,20 @@ export function TicketCancellationModal({
   const [confirmResult, setConfirmResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const maxCancelCount = ticket?.count ? Math.max(1, Math.floor(Number(ticket.count))) : undefined;
+  const refundUnavailable = Boolean((ticket || viewData) && isRefundUnavailable(ticket, viewData));
+
   useEffect(() => {
     if (isOpen) {
       const txId = order?.transactionId || order?.transaction_reference || defaultTransactionId;
       const email = order?.attendeeEmail || order?.customer_email || defaultCustomerEmail;
-      const tierName = order?.tier || order?.ticket_name || "General Entry";
-      const qty = order?.quantity || 1;
+      const tierName = ticket?.ticket_name || order?.tier || order?.ticket_name || "General Entry";
+      const qty = ticket?.count ? Math.max(1, Math.floor(Number(ticket.count))) : (order?.quantity || 1);
 
       setTransactionId(txId);
       setCustomerEmail(email);
       setTicketName(tierName);
-      setTicketId(order?.ticket_id || 101);
+      setTicketId(ticket?.ticket_id || order?.ticket_id || 101);
       setCancelCount(qty);
       setCancellationMode("cancel_only");
       setRefundReason("REQUESTED_BY_CUSTOMER");
@@ -62,7 +73,7 @@ export function TicketCancellationModal({
       setConfirmResult(null);
       setError(null);
     }
-  }, [isOpen, order, defaultTransactionId, defaultCustomerEmail]);
+  }, [isOpen, order, ticket, defaultTransactionId, defaultCustomerEmail]);
 
   if (!isOpen) return null;
 
@@ -142,6 +153,7 @@ export function TicketCancellationModal({
 
       if (resStatus === 200 || resStatus === 100) {
         setConfirmResult(res?.data || res);
+        onSuccess?.();
       } else {
         setError(res?.data?.message || "Cancellation confirmation failed.");
       }
@@ -173,6 +185,12 @@ export function TicketCancellationModal({
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {refundUnavailable && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl text-xs font-medium">
+            Cancel + Refund is not available for coupon, free, Koko, or MintPay tickets. Use Cancel Only.
+          </div>
+        )}
 
         {/* Handling fee banner */}
         <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-medium">
@@ -228,6 +246,7 @@ export function TicketCancellationModal({
             <input
               type="number"
               min={1}
+              max={maxCancelCount}
               value={cancelCount}
               onChange={(e) => {
                 setCancelCount(Number(e.target.value));
@@ -236,6 +255,11 @@ export function TicketCancellationModal({
               disabled={isVerifying || isConfirming}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
             />
+            {maxCancelCount !== undefined && (
+              <span className="block text-[11px] text-zinc-400 mt-1">
+                Max available: {maxCancelCount}
+              </span>
+            )}
           </div>
 
           {/* Cancellation Mode */}
@@ -243,7 +267,7 @@ export function TicketCancellationModal({
             <label className="block text-xs font-medium text-zinc-400 mb-1">
               Cancellation Type
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid ${refundUnavailable ? "grid-cols-1" : "grid-cols-2"} gap-2`}>
               <button
                 type="button"
                 onClick={() => {
@@ -260,21 +284,23 @@ export function TicketCancellationModal({
                 <span className="text-[10px] text-zinc-400">No refund processed. Fee applies.</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setCancellationMode("cancel_and_refund");
-                  setIsVerified(false);
-                }}
-                className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                  cancellationMode === "cancel_and_refund"
-                    ? "bg-zinc-800 border-red-500 text-white"
-                    : "bg-zinc-800/40 border-zinc-700 text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <span className="text-xs font-bold">Cancel + Refund</span>
-                <span className="text-[10px] text-zinc-400">Refund = price − Rs. 100 fee.</span>
-              </button>
+              {!refundUnavailable && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancellationMode("cancel_and_refund");
+                    setIsVerified(false);
+                  }}
+                  className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                    cancellationMode === "cancel_and_refund"
+                      ? "bg-zinc-800 border-red-500 text-white"
+                      : "bg-zinc-800/40 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <span className="text-xs font-bold">Cancel + Refund</span>
+                  <span className="text-[10px] text-zinc-400">Refund = price − Rs. 100 fee.</span>
+                </button>
+              )}
             </div>
           </div>
 

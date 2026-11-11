@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
               We have dispatched a reset link to <span className="font-semibold">{email}</span>.
             </p>
           </div>
-          <Link href="/login" className="w-full">
+          <Link href="/" className="w-full">
             <Button className="w-full bg-[#043825] hover:bg-[#064d33] text-white font-bold h-10 rounded-xl text-xs">
               Return to Login
             </Button>
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           </Button>
 
           <Link
-            href="/login"
+            href="/"
             className="flex items-center justify-center gap-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors mt-2"
           >
             <ArrowLeft className="h-3.5 w-3.5" />

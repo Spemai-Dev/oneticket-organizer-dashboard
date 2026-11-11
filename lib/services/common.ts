@@ -14,6 +14,13 @@ export function buildQueryString(params?: string | Record<string, any>): string 
   return searchParams.toString();
 }
 
+/** Redirect unauthenticated browser requests to the root login route. */
+function redirectToLogin(): void {
+  if (typeof window !== "undefined") {
+    window.location.href = "/";
+  }
+}
+
 export async function unauth_add(endpoint: string, data: any) {
 
   try {
@@ -24,9 +31,7 @@ export async function unauth_add(endpoint: string, data: any) {
     });
 
     if (response.data === 401 || response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
     }
     return response.data;
   } catch (error) {
@@ -45,9 +50,7 @@ export async function auth_add(endpoint: string, data: any) {
     });
 
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
       return;
     }
 
@@ -55,9 +58,7 @@ export async function auth_add(endpoint: string, data: any) {
   } catch (error: any) {
     console.error("Error in POST request:", error);
     if (error.response && error.response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
     }
     throw error;
   }
@@ -73,9 +74,7 @@ export async function get(endpoint: string) {
     });
 
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
       return;
     }
 
@@ -83,9 +82,7 @@ export async function get(endpoint: string) {
   } catch (error: any) {
     console.error("Error in GET request:", error);
     if (error.response && error.response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLogin();
     }
     throw error;
   }

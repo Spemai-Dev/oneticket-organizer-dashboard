@@ -1,150 +1,276 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, ChevronDown, MoreVertical, ChevronLeft, ChevronRight, ArrowUpRight, AlertTriangle, Send, RotateCcw } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Search,
+  ChevronDown,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpRight,
+  AlertTriangle,
+  Send,
+  RotateCcw,
+  Eye,
+  Copy,
+  Check,
+  RefreshCw,
+} from "lucide-react";
 import { useDashboard } from "../../lib/context/dashboard-context";
-import { MOCK_ORDERS } from "../../lib/mock-data";
-import { StatusBadge } from "./status-badge";
-import { formatNumber } from "../../lib/utils";
+import { formatAmount } from "../../lib/utils";
+import { getRefundStatusMeta } from "../../lib/utils/participant-helpers";
 import { Badge } from "../ui/badge";
 import { TicketUpgradeModal } from "./ticket-upgrade-modal";
 import { TicketCancellationModal } from "./ticket-cancellation-modal";
 import { ResendConfirmationModal } from "./resend-confirmation-modal";
 import { RefundRequestModal } from "./refund-request-modal";
+import { ViewParticipantModal } from "./view-participant-modal";
 import styles from "./sales-data-table.module.scss";
+
+interface ParticipantListRow {
+  id?: number | string;
+  transaction_reference?: string;
+  datetime?: string;
+  customer_name?: string;
+  customer_email?: string;
+  qr_code?: string;
+  is_refund?: boolean;
+  is_refund_init?: boolean;
+  is_refund_rejected?: boolean;
+  is_refund_request_approved?: boolean;
+  refund_request_status?: string;
+  total_amount?: number | string;
+  is_checked_in?: boolean;
+}
+
+interface NotifyListRow {
+  id?: number | string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  email?: string;
+  phone_number?: string;
+  contact_number?: string;
+  phone?: string;
+  created_at?: string;
+}
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 3) {
+    return [1, 2, 3, 4, "...", total];
+  }
+  if (current >= total - 2) {
+    return [1, "...", total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
 
 export function SalesDataTable() {
   const {
     participants,
+    participantsCount,
+    participantsLoading,
     notifies,
+    notifiesCount,
     dataType,
     setDataType,
-    dataCount,
     currentPage,
     setCurrentPage,
+    searchText,
+    setSearchText,
+    transactionStatusFilter,
+    setTransactionStatusFilter,
+    checkInFilter,
+    setCheckInFilter,
+    fetchParticipants,
     fetchNotifies,
     selectedEventId,
+    selectedKey,
+    eventData,
+    analytics,
   } = useDashboard();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTier, setSelectedTier] = useState<string>("All Tiers");
-  const [selectedStatus, setSelectedStatus] = useState<string>("All");
-
-  // Action Modals State
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [activeModal, setActiveModal] = useState<"upgrade" | "cancel" | "resend" | "refund" | null>(null);
-  const [targetOrder, setTargetOrder] = useState<any>(null);
+  const [activeModal, setActiveModal] = useState<
+    "view" | "upgrade" | "cancel" | "resend" | "refund" | null
+  >(null);
+  const [targetRow, setTargetRow] = useState<ParticipantListRow | null>(null);
+  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Determine if using live API participants or mock orders fallback
-  const hasLiveParticipants = participants && participants.length > 0;
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ordersToDisplay = hasLiveParticipants
-    ? participants.map((p: any, idx: number) => ({
-      id: p.transaction_reference || p.id || `live-${idx}`,
-      transactionId: p.transaction_reference || `TXN-${idx + 1000}`,
-      attendeeName: p.customer_name || "Valued Customer",
-      attendeeEmail: p.customer_email || "customer@oneticket.lk",
-      tier: p.ticket_name || "General",
-      quantity: p.quantity || 1,
-      gateway: p.gateway || "OnePay Direct",
-      gatewayType: "OnePay",
-      amount: Number(p.total_amount || 0),
-      timestamp: p.datetime ? new Date(p.datetime).toLocaleString() : "Recently",
-      status: p.is_refund ? "Refunded" : "Completed",
-    }))
-    : [];
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
 
-  // Filter orders
-  const filteredOrders = ordersToDisplay.filter((order) => {
-    const matchesSearch =
-      order.transactionId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.attendeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.attendeeEmail.toLowerCase().includes(searchTerm.toLowerCase());
+  const currency =
+    analytics?.event?.currency ||
+    eventData?.tickets_currency ||
+    eventData?.currency ||
+    "LKR";
 
-    const matchesTier =
-      selectedTier === "All Tiers" || order.tier === selectedTier;
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
 
-    const matchesStatus =
-      selectedStatus === "All" || order.status === selectedStatus;
+    searchTimerRef.current = setTimeout(() => {
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return;
+      }
+      if (dataType === "participants") {
+        fetchParticipants({ page: 1, searchText: value });
+      } else {
+        fetchNotifies(selectedEventId, 1, value);
+      }
+    }, 400);
+  };
 
-    return matchesSearch && matchesTier && matchesStatus;
-  });
+  const handleCheckInFilterChange = (value: string) => {
+    setCheckInFilter(value);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
+    fetchParticipants({ page: 1, isCheckedIn: value });
+  };
 
-  // Filter notifies
-  const filteredNotifies = notifies.filter((n: any) => {
-    const query = searchTerm.toLowerCase();
-    const name = `${n.first_name || ""} ${n.last_name || ""}`.toLowerCase();
-    const email = (n.email || "").toLowerCase();
-    const phone = (n.phone_number || n.contact_number || "").toLowerCase();
-    return name.includes(query) || email.includes(query) || phone.includes(query);
-  });
+  const handleStatusFilterChange = (value: string) => {
+    setTransactionStatusFilter(value);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
+    fetchParticipants({ page: 1, transactionStatus: value });
+  };
 
-  const getTierBadge = (tier: string) => {
-    switch (tier) {
-      case "Gold":
-        return <Badge variant="gold" className="bg-amber-400 text-amber-950 font-bold">Gold</Badge>;
-      case "VIP":
-        return <Badge variant="purple" className="bg-purple-900 text-purple-100 font-bold">VIP</Badge>;
-      case "General":
-        return <Badge variant="emerald" className="bg-[#043825] text-emerald-300 font-bold">General</Badge>;
-      default:
-        return <Badge variant="gray">{tier}</Badge>;
+  const handleManualRefresh = async () => {
+    if (!selectedEventId) return;
+    setIsRefreshing(true);
+    try {
+      if (dataType === "participants") {
+        await fetchParticipants({ page: currentPage });
+      } else {
+        await fetchNotifies(selectedEventId, currentPage);
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  const getGatewayDot = (gatewayType: string) => {
-    if (gatewayType.includes("OnePay")) return <span className="h-2 w-2 rounded-full bg-emerald-500" />;
-    if (gatewayType.includes("KOKO")) return <span className="h-2 w-2 rounded-full bg-purple-500" />;
-    if (gatewayType.includes("Mintpay")) return <span className="h-2 w-2 rounded-full bg-amber-500" />;
-    return <span className="h-2 w-2 rounded-full bg-blue-500" />;
+  const handleCopyQr = async (qrCode: string, rowKey: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!qrCode) return;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(qrCode);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = qrCode;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedRef(rowKey);
+      setTimeout(() => {
+        setCopiedRef((prev) => (prev === rowKey ? null : prev));
+      }, 1500);
+    } catch {
+      // Ignore clipboard failure
+    }
   };
 
-  const handleOpenAction = (order: any, action: "upgrade" | "cancel" | "resend" | "refund") => {
-    setTargetOrder(order);
+  const handleOpenAction = (
+    row: ParticipantListRow,
+    action: "view" | "upgrade" | "cancel" | "resend" | "refund"
+  ) => {
+    setTargetRow(row);
     setActiveModal(action);
     setActiveMenuId(null);
   };
 
-  const totalCount = Number(dataCount || (dataType === "participants" ? participants.length : notifies.length) || 0);
-  const totalPages = Math.max(1, Math.ceil(totalCount / 10));
-  const startItem = totalCount > 0 ? (currentPage - 1) * 10 + 1 : 0;
-  const endItem = Math.min(currentPage * 10, totalCount);
+  const participantRows: ParticipantListRow[] = Array.isArray(participants)
+    ? (participants as ParticipantListRow[])
+    : [];
+  const notifyRows: NotifyListRow[] = Array.isArray(notifies)
+    ? (notifies as NotifyListRow[])
+    : [];
 
-  const pageNumbers: number[] = [];
-  const startPage = Math.max(1, currentPage - 1);
-  const endPage = Math.min(totalPages, Math.max(startPage + 2, Math.min(totalPages, 3)));
-  for (let i = 1; i <= Math.min(totalPages, 5); i++) {
-    pageNumbers.push(i);
-  }
+  const totalCount =
+    dataType === "participants"
+      ? Number(participantsCount || participantRows.length || 0)
+      : Number(notifiesCount || notifyRows.length || 0);
+  const totalPages = Math.max(1, Math.ceil(totalCount / 10));
+  const activeItemsLength =
+    dataType === "participants" ? participantRows.length : notifyRows.length;
+  const startItem = activeItemsLength > 0 ? (currentPage - 1) * 10 + 1 : 0;
+  const endItem = activeItemsLength > 0 ? Math.min(startItem + activeItemsLength - 1, totalCount) : 0;
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
+
+  const targetOrderContext = targetRow
+    ? {
+      id: targetRow.id ?? targetRow.transaction_reference,
+      transactionId: targetRow.transaction_reference || String(targetRow.id || ""),
+      transaction_reference: targetRow.transaction_reference || String(targetRow.id || ""),
+      attendeeName: targetRow.customer_name || "",
+      attendeeEmail: targetRow.customer_email || "",
+      customer_email: targetRow.customer_email || "",
+    }
+    : undefined;
 
   return (
     <div className={styles.cardContainer}>
       {/* Top Tab Bar: Participants List vs Notify Me */}
-      <div className="flex items-center gap-6 px-4 pt-4 border-b border-zinc-200 dark:border-zinc-800">
-        <button
-          onClick={() => {
-            setDataType("participants");
-            setCurrentPage(1);
-          }}
-          className={`font-extrabold text-sm pb-3 border-b-2 transition-all cursor-pointer ${dataType === "participants"
+      <div className="flex flex-wrap items-center justify-between gap-4 px-2 pt-2 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-6">
+          <button
+            type="button"
+            onClick={() => {
+              if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+              setDataType("participants");
+              setCurrentPage(1);
+            }}
+            className={`font-extrabold text-sm pb-3 border-b-2 transition-all cursor-pointer ${dataType === "participants"
               ? "border-[#00d07d] text-[#00d07d]"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-        >
-          Participants List ({hasLiveParticipants ? participants.length : MOCK_ORDERS.length})
-        </button>
-        <button
-          onClick={() => {
-            setDataType("notifies");
-            setCurrentPage(1);
-            fetchNotifies(selectedEventId, 1);
-          }}
-          className={`font-extrabold text-sm pb-3 border-b-2 transition-all cursor-pointer ${dataType === "notifies"
+              : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              }`}
+          >
+            Participants List ({participantsCount || participantRows.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+              setDataType("notifies");
+              setCurrentPage(1);
+            }}
+            className={`font-extrabold text-sm pb-3 border-b-2 transition-all cursor-pointer ${dataType === "notifies"
               ? "border-[#00d07d] text-[#00d07d]"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
+              : "border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              }`}
+          >
+            Notify Me ({notifiesCount || notifyRows.length})
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing || !selectedEventId || (dataType === "participants" && !selectedKey)}
+          className="mb-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/70 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-[#00d07d] transition-colors disabled:opacity-50 cursor-pointer"
         >
-          Notify Me ({notifies.length})
+          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing || participantsLoading ? "animate-spin text-[#00d07d]" : ""}`} />
+          <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
         </button>
       </div>
 
@@ -157,11 +283,11 @@ export function SalesDataTable() {
             type="text"
             placeholder={
               dataType === "notifies"
-                ? "Search name, email address or contact number..."
-                : "Search order ID, attendee name or email..."
+                ? "Search notify me by name or email..."
+                : "Search ticket ref, participant name or email..."
             }
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchText}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className={styles.searchInput}
           />
         </div>
@@ -169,29 +295,32 @@ export function SalesDataTable() {
         {/* Filters (Participants only) */}
         {dataType === "participants" && (
           <div className={styles.filterGroup}>
-            {/* Tier Tabs */}
             <div className={styles.tierTabs}>
-              {["All Tiers", "General", "VIP", "Gold"].map((tier) => (
+              {[
+                { label: "All Check-in", value: "" },
+                { label: "Checked In", value: "true" },
+                { label: "Pending", value: "false" },
+              ].map((opt) => (
                 <button
-                  key={tier}
-                  onClick={() => setSelectedTier(tier)}
-                  className={`${styles.tierBtn} ${selectedTier === tier ? styles.active : ""}`}
+                  key={opt.label}
+                  type="button"
+                  onClick={() => handleCheckInFilterChange(opt.value)}
+                  className={`${styles.tierBtn} ${checkInFilter === opt.value ? styles.active : ""}`}
                 >
-                  {tier}
+                  {opt.label}
                 </button>
               ))}
             </div>
 
-            {/* Status Select Dropdown */}
             <div className={styles.selectWrapper}>
               <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                value={transactionStatusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value)}
                 className={styles.selectInput}
               >
-                <option value="All">Status: All</option>
-                <option value="Completed">Status: Completed</option>
-                <option value="Refunded">Status: Refunded</option>
+                <option value="">Status: All</option>
+                <option value="completed">Status: Completed</option>
+                <option value="refunded">Status: Refunded</option>
               </select>
               <ChevronDown className={styles.selectChevron} />
             </div>
@@ -205,104 +334,180 @@ export function SalesDataTable() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>TRAN ID</th>
-                <th>ATTENDEE</th>
-                <th>TIER</th>
-                <th>QTY</th>
-                <th>GATEWAY</th>
-                <th>AMOUNT</th>
-                <th>TIMESTAMP</th>
+                <th>TICKET REFERENCE</th>
+                <th>DATE / TIME</th>
+                <th>PARTICIPANT</th>
+                <th>QR LINK</th>
                 <th>STATUS</th>
-                <th style={{ textAlign: "right" }}>ACTION</th>
+                <th>REFUND STATUS</th>
+                <th>PAID AMOUNT</th>
+                <th>CHECK-IN</th>
+                <th >ACTIONS</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td className={styles.tranId}>
-                      {order.transactionId}
-                    </td>
-                    <td>
-                      <div className={styles.attendeeCell}>
-                        <span className={styles.name}>
-                          {order.attendeeName}
-                        </span>
-                        <span className={styles.email}>{order.attendeeEmail}</span>
-                      </div>
-                    </td>
-                    <td>{getTierBadge(order.tier)}</td>
-                    <td style={{ fontWeight: 700 }}>
-                      {order.quantity}
-                    </td>
-                    <td>
-                      <div className={styles.gatewayCell}>
-                        {getGatewayDot(order.gatewayType)}
-                        <span>{order.gateway}</span>
-                      </div>
-                    </td>
-                    <td className={styles.amount}>
-                      Rs. {formatNumber(order.amount)}.00
-                    </td>
-                    <td style={{ color: "#71717a" }}>{order.timestamp}</td>
-                    <td>
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td style={{ textAlign: "right", position: "relative" }}>
-                      <div className="relative inline-block text-left">
-                        <button
-                          onClick={() => setActiveMenuId(activeMenuId === order.id ? null : order.id)}
-                          className={styles.actionBtn}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
+            <tbody className={participantsLoading ? "opacity-60 transition-opacity" : ""}>
+              {participantRows.length > 0 ? (
+                participantRows.map((p, idx) => {
+                  const rowKey = p.transaction_reference || String(p.id || idx);
+                  const qrCode = String(p.qr_code || "").trim();
+                  const isUrl = qrCode.startsWith("http://") || qrCode.startsWith("https://");
+                  const isCopied = copiedRef === rowKey;
+                  const refundMeta = getRefundStatusMeta(p);
+                  const formattedDate = p.datetime
+                    ? new Date(p.datetime).toLocaleString()
+                    : "N/A";
 
-                        {activeMenuId === order.id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-10 cursor-default"
-                              onClick={() => setActiveMenuId(null)}
-                            />
-                            <div className="absolute right-0 mt-1 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-20 py-1 flex flex-col text-xs">
-                              <button
-                                onClick={() => handleOpenAction(order, "upgrade")}
-                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors"
+                  return (
+                    <tr key={rowKey}>
+                      <td className={styles.tranId}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAction(p, "view")}
+                          className="hover:text-[#00d07d] transition-colors text-left cursor-pointer"
+                          title="View participant details"
+                        >
+                          {p.transaction_reference || "N/A"}
+                        </button>
+                      </td>
+                      <td style={{ color: "#71717a" }}>{formattedDate}</td>
+                      <td>
+                        <div className={styles.attendeeCell}>
+                          <span className={styles.name}>
+                            {p.customer_name || "N/A"}
+                          </span>
+                          <span className={styles.email}>
+                            {p.customer_email || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        {qrCode ? (
+                          <div className="inline-flex items-center gap-1.5">
+                            {isUrl ? (
+                              <a
+                                href={qrCode}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
+                                title={qrCode}
                               >
-                                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                                <span>Upgrade Ticket</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenAction(order, "cancel")}
-                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-red-400 hover:bg-zinc-800 text-left transition-colors"
-                              >
-                                <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                                <span>Cancel Ticket</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenAction(order, "resend")}
-                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-blue-400 hover:bg-zinc-800 text-left transition-colors"
-                              >
-                                <Send className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                                <span>Resend Email/SMS</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenAction(order, "refund")}
-                                className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 text-left transition-colors"
-                              >
-                                <RotateCcw className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                <span>Full Refund Request</span>
-                              </button>
-                            </div>
-                          </>
+                                {qrCode.length > 18 ? `${qrCode.slice(0, 18)}...` : qrCode}
+                              </a>
+                            ) : (
+                              <span className="text-xs font-mono text-zinc-600 dark:text-zinc-300" title={qrCode}>
+                                {qrCode.length > 18 ? `${qrCode.slice(0, 18)}...` : qrCode}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopyQr(qrCode, rowKey, e)}
+                              title={isCopied ? "Copied!" : "Copy QR link"}
+                              aria-label={isCopied ? "Copied" : "Copy QR link"}
+                              className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            >
+                              {isCopied ? (
+                                <Check className="h-3.5 w-3.5 text-[#00d07d]" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td>
+                        <Badge variant={p.is_refund ? "red" : "emerald"}>
+                          {p.is_refund ? "Refund" : "Paid"}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge variant={refundMeta.variant}>{refundMeta.label}</Badge>
+                      </td>
+                      <td className={styles.amount}>
+                        {formatAmount(Number(p.total_amount || 0))} {currency}
+                      </td>
+                      <td >
+                        <Badge variant={p.is_checked_in ? "emerald" : "gold"} style={{ fontSize: "8px" }}>
+                          {p.is_checked_in ? "Checked in" : "Check in pending"}
+                        </Badge>
+                      </td>
+                      <td style={{ textAlign: "right", position: "relative" }}>
+                        <div className="relative inline-block text-left">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveMenuId(activeMenuId === rowKey ? null : rowKey)
+                            }
+                            className={styles.actionBtn}
+                            aria-label="More participant actions"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+
+                          {activeMenuId === rowKey && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-10 cursor-default"
+                                onClick={() => setActiveMenuId(null)}
+                              />
+                              <div className="absolute right-0 mt-1 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-20 py-1 flex flex-col text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAction(p, "view")}
+                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <Eye className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                  <span>View Participant</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAction(p, "upgrade")}
+                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                  <span>Upgrade Ticket</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAction(p, "cancel")}
+                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-red-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                                  <span>Cancel Ticket</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAction(p, "resend")}
+                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-blue-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <Send className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                                  <span>Resend Email/SMS</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAction(p, "refund")}
+                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                  <span>Full Refund Request</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={9} style={{ padding: "2rem 0", textAlign: "center", color: "#a1a1aa" }}>
-                    No orders found matching your criteria.
+                    {!selectedKey
+                      ? "No venue slot key selected. Select a venue/time slot to view participants."
+                      : participantsLoading
+                        ? "Loading participants..."
+                        : "No participants found matching your criteria."}
                   </td>
                 </tr>
               )}
@@ -322,8 +527,8 @@ export function SalesDataTable() {
               </tr>
             </thead>
             <tbody>
-              {filteredNotifies.length > 0 ? (
-                filteredNotifies.map((n: any, idx: number) => (
+              {notifyRows.length > 0 ? (
+                notifyRows.map((n, idx) => (
                   <tr key={n.id || idx}>
                     <td className="font-mono text-xs text-zinc-400">
                       #{idx + 1 + (currentPage - 1) * 10}
@@ -348,7 +553,7 @@ export function SalesDataTable() {
               ) : (
                 <tr>
                   <td colSpan={6} style={{ padding: "2.5rem 0", textAlign: "center", color: "#a1a1aa" }}>
-                    No "Notify Me" notification requests recorded for this event.
+                    No &quot;Notify Me&quot; notification requests recorded for this event.
                   </td>
                 </tr>
               )}
@@ -361,43 +566,42 @@ export function SalesDataTable() {
       <div className={styles.paginationFooter}>
         <span className={styles.showingText}>
           Showing <span className={styles.highlight}>{startItem}–{endItem}</span> of{" "}
-          <span className={styles.highlight}>{totalCount}</span> {dataType === "notifies" ? "requests" : "participants"}
+          <span className={styles.highlight}>{totalCount}</span>{" "}
+          {dataType === "notifies" ? "requests" : "participants"}
         </span>
 
         <div className={styles.btnGroup}>
           <button
+            type="button"
             disabled={currentPage <= 1}
-            onClick={() => {
-              const newPage = Math.max(1, currentPage - 1);
-              setCurrentPage(newPage);
-              if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
-            }}
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             className={`${styles.pageNavBtn} ${currentPage <= 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span>Previous</span>
           </button>
 
-          {pageNumbers.map((num) => (
-            <button
-              key={num}
-              onClick={() => {
-                setCurrentPage(num);
-                if (dataType === "notifies") fetchNotifies(selectedEventId, num);
-              }}
-              className={`${styles.numBtn} ${currentPage === num ? styles.activePage : ""} cursor-pointer`}
-            >
-              {num}
-            </button>
-          ))}
+          {pageNumbers.map((num, idx) =>
+            typeof num === "number" ? (
+              <button
+                key={num}
+                type="button"
+                onClick={() => setCurrentPage(num)}
+                className={`${styles.numBtn} ${currentPage === num ? styles.activePage : ""} cursor-pointer`}
+              >
+                {num}
+              </button>
+            ) : (
+              <span key={`ellipsis-${idx}`} className="px-1.5 text-zinc-400">
+                ...
+              </span>
+            )
+          )}
 
           <button
+            type="button"
             disabled={currentPage >= totalPages}
-            onClick={() => {
-              const newPage = Math.min(totalPages, currentPage + 1);
-              setCurrentPage(newPage);
-              if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
-            }}
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             className={`${styles.pageNavBtn} ${currentPage >= totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
           >
             <span>Next</span>
@@ -406,35 +610,55 @@ export function SalesDataTable() {
         </div>
       </div>
 
-      {/* Action Modals */}
+      {/* View Participant Detail Drawer */}
+      {activeModal === "view" && targetRow?.transaction_reference && (
+        <ViewParticipantModal
+          key={targetRow.transaction_reference}
+          isOpen={true}
+          onClose={() => setActiveModal(null)}
+          eventId={selectedEventId}
+          transactionReference={targetRow.transaction_reference}
+          rowData={targetRow}
+          onActionSuccess={() => fetchParticipants({ page: currentPage })}
+        />
+      )}
+
+      {/* Row Action Modals */}
       <TicketUpgradeModal
         isOpen={activeModal === "upgrade"}
         onClose={() => setActiveModal(null)}
-        order={targetOrder}
-        defaultTransactionId={targetOrder?.transactionId || "R0VP1192CE2B5DCE8C15C"}
-        defaultCustomerEmail={targetOrder?.attendeeEmail || "customer@example.com"}
+        order={targetOrderContext}
+        onSuccess={() => fetchParticipants({ page: currentPage })}
+        defaultTransactionId={targetOrderContext?.transactionId || ""}
+        defaultCustomerEmail={targetOrderContext?.attendeeEmail || ""}
       />
 
       <TicketCancellationModal
         isOpen={activeModal === "cancel"}
         onClose={() => setActiveModal(null)}
-        order={targetOrder}
-        defaultTransactionId={targetOrder?.transactionId || "R0VP1192CE2B5DCE8C15C"}
-        defaultCustomerEmail={targetOrder?.attendeeEmail || "customer@example.com"}
+        order={targetOrderContext}
+        onSuccess={() => fetchParticipants({ page: currentPage })}
+        defaultTransactionId={targetOrderContext?.transactionId || ""}
+        defaultCustomerEmail={targetOrderContext?.attendeeEmail || ""}
       />
 
-      <ResendConfirmationModal
-        isOpen={activeModal === "resend"}
-        onClose={() => setActiveModal(null)}
-        defaultTransactionId={targetOrder?.transactionId || "R0VP1192CE2B5DCE8C15C"}
-      />
+      {activeModal === "resend" && (
+        <ResendConfirmationModal
+          key={`resend-${targetOrderContext?.transactionId || "none"}`}
+          isOpen={true}
+          onClose={() => setActiveModal(null)}
+          defaultTransactionId={targetOrderContext?.transactionId || ""}
+        />
+      )}
 
-      <RefundRequestModal
-        isOpen={activeModal === "refund"}
-        onClose={() => setActiveModal(null)}
-        defaultTransactionId={targetOrder?.transactionId || "12345"}
-      />
+      {activeModal === "refund" && (
+        <RefundRequestModal
+          key={`refund-${targetOrderContext?.id || "none"}`}
+          isOpen={true}
+          onClose={() => setActiveModal(null)}
+          defaultTransactionId={String(targetOrderContext?.id || "")}
+        />
+      )}
     </div>
   );
 }
-

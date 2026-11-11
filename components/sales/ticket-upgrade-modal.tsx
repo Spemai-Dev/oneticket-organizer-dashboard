@@ -5,11 +5,15 @@ import { ArrowUpRight, CheckCircle2, AlertCircle, Loader2, X, RefreshCw } from "
 import { previewTicketUpgrade, confirmTicketUpgrade, resendUpgradeConfirmation } from "../../lib/services/dashboard";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatNumber } from "../../lib/utils";
+import { getTicketTierAmount, getUpgradeableEventTickets } from "../../lib/utils/participant-helpers";
+import { ParticipantTicketItem } from "../../types";
 
 interface TicketUpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   order?: any;
+  ticket?: ParticipantTicketItem | null;
+  onSuccess?: () => void;
   defaultTransactionId?: string;
   defaultCustomerEmail?: string;
 }
@@ -18,10 +22,12 @@ export function TicketUpgradeModal({
   isOpen,
   onClose,
   order,
+  ticket,
+  onSuccess,
   defaultTransactionId = "R0VP1192CE2B5DCE8C15C",
   defaultCustomerEmail = "customer@example.com",
 }: TicketUpgradeModalProps) {
-  const { tickets } = useDashboard();
+  const { tickets, eventData } = useDashboard();
 
   const [transactionId, setTransactionId] = useState(defaultTransactionId);
   const [customerEmail, setCustomerEmail] = useState(defaultCustomerEmail);
@@ -40,27 +46,31 @@ export function TicketUpgradeModal({
   const [resendResult, setResendResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync state when modal opens or target order changes
+  const maxUpgradeCount = ticket?.count ? Math.max(1, Math.floor(Number(ticket.count))) : undefined;
+
+  // Sync state when modal opens or target order/ticket changes
   useEffect(() => {
     if (isOpen) {
       const txId = order?.transactionId || order?.transaction_reference || defaultTransactionId;
       const email = order?.attendeeEmail || order?.customer_email || defaultCustomerEmail;
-      const tierName = order?.tier || order?.ticket_name || "General Entry";
-      const qty = order?.quantity || 1;
+      const tierName = ticket?.ticket_name || order?.tier || order?.ticket_name || "General Entry";
+      const qty = ticket?.count ? Math.max(1, Math.floor(Number(ticket.count))) : (order?.quantity || 1);
 
       setTransactionId(txId);
       setCustomerEmail(email);
       setCurrentTicketName(tierName);
       setUpgradeCount(qty);
       setUpgradeTicketId("");
+      setMode("upgrade");
       setIsVerified(false);
       setVerifyDetails(null);
       setConfirmResult(null);
       setResendResult(null);
       setError(null);
 
-      // Attempt to resolve current ticket ID from available slot tickets
-      if (tickets && tickets.length > 0) {
+      if (ticket?.ticket_id) {
+        setCurrentTicketId(ticket.ticket_id);
+      } else if (tickets && tickets.length > 0) {
         const matched = tickets.find(
           (t: any) =>
             (t.ticket_name && t.ticket_name.toLowerCase() === tierName.toLowerCase()) ||
@@ -71,17 +81,20 @@ export function TicketUpgradeModal({
         }
       }
     }
-  }, [isOpen, order, defaultTransactionId, defaultCustomerEmail, tickets]);
+  }, [isOpen, order, ticket, defaultTransactionId, defaultCustomerEmail, tickets]);
 
   if (!isOpen) return null;
 
-  // Filter available target tickets to upgrade to
-  const availableTargetTickets = tickets && tickets.length > 0
-    ? tickets.filter((t: any) => String(t.ticket_id || t.id) !== String(currentTicketId))
-    : [
-        { id: "102", name: "VIP Pass", price: 12500 },
-        { id: "103", name: "Gold Tier", price: 8500 },
-      ];
+  // Filter available target tickets to upgrade to (higher price tiers when ticket metadata is provided)
+  const upgradeable = ticket && tickets && tickets.length > 0
+    ? getUpgradeableEventTickets(ticket, tickets)
+    : [];
+  const availableTargetTickets =
+    upgradeable.length > 0
+      ? upgradeable
+      : tickets && tickets.length > 0
+        ? tickets.filter((t: any) => String(t.ticket_id || t.id) !== String(currentTicketId))
+        : [];
 
   const handleVerify = async () => {
     if (!transactionId || !customerEmail) {
@@ -111,7 +124,7 @@ export function TicketUpgradeModal({
         current_ticket_id: currentTicketId,
         upgrade_ticket_id: Number(upgradeTicketId) || upgradeTicketId,
         upgrade_ticket_count: Number(upgradeCount) || 1,
-        organizer_email: "info@onepay.lk",
+        organizer_email: eventData?.organizer_email || "info@onepay.lk",
       };
 
       const res: any = await previewTicketUpgrade(queryParams, body);
@@ -145,7 +158,7 @@ export function TicketUpgradeModal({
         current_ticket_id: currentTicketId,
         upgrade_ticket_id: Number(upgradeTicketId) || upgradeTicketId,
         upgrade_ticket_count: Number(upgradeCount) || 1,
-        organizer_email: "info@onepay.lk",
+        organizer_email: eventData?.organizer_email || "info@onepay.lk",
       };
 
       const res: any = await confirmTicketUpgrade(queryParams, body);
@@ -153,6 +166,7 @@ export function TicketUpgradeModal({
 
       if (resStatus === 200 || resStatus === 100) {
         setConfirmResult(res?.data || res);
+        onSuccess?.();
       } else {
         setError(res?.data?.message || "Ticket upgrade confirmation failed.");
       }
@@ -300,12 +314,15 @@ export function TicketUpgradeModal({
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Select upgrade ticket tier...</option>
-                {availableTargetTickets.map((t: any) => (
-                  <option key={t.ticket_id || t.id} value={t.ticket_id || t.id}>
-                    {t.ticket_name || t.name}
-                    {t.price || t.ticket_amount ? ` — Rs. ${formatNumber(t.price || t.ticket_amount)}.00` : ""}
-                  </option>
-                ))}
+                {availableTargetTickets.map((t: any) => {
+                  const tierPrice = getTicketTierAmount(t);
+                  return (
+                    <option key={t.ticket_id || t.id} value={t.ticket_id || t.id}>
+                      {t.ticket_name || t.name}
+                      {tierPrice > 0 ? ` — Rs. ${formatNumber(tierPrice)}.00` : ""}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -317,6 +334,7 @@ export function TicketUpgradeModal({
               <input
                 type="number"
                 min={1}
+                max={maxUpgradeCount}
                 value={upgradeCount}
                 onChange={(e) => {
                   setUpgradeCount(Number(e.target.value));
@@ -325,6 +343,11 @@ export function TicketUpgradeModal({
                 disabled={isVerifying || isConfirming}
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
               />
+              {maxUpgradeCount !== undefined && (
+                <span className="block text-[11px] text-zinc-400 mt-1">
+                  Max available: {maxUpgradeCount}
+                </span>
+              )}
             </div>
 
             {/* Verification Details Breakdown Block */}
