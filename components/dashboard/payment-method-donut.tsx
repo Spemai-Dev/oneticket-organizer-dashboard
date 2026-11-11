@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PAYMENT_METHOD_STATS } from "../../lib/mock-data";
 import { formatNumber, formatAmount } from "../../lib/utils";
-import styles from "./payment-method-donut.module.scss";
 
 import { useDashboard } from "../../lib/context/dashboard-context";
 
@@ -42,19 +41,18 @@ export function PaymentMethodDonut() {
     : Number(analytics?.summary?.tickets_sold || volume?.total_tickets || 0);
 
   return (
-    <div className={styles.cardContainer}>
+    <div className="flex h-full flex-col justify-between gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div>
-        <h3 className={styles.title}>
+        <h3 className="text-base font-bold text-zinc-900 dark:text-white">
           Sale by Payment Method
         </h3>
-        <p className={styles.subtitle}>Gateway distribution & split</p>
+        <p className="text-xs text-zinc-500">Gateway distribution & split</p>
       </div>
 
-      <div className={styles.chartContent}>
+      <div className="my-auto flex w-full flex-col items-center gap-5">
         {paymentData.length > 0 ? (
           <>
-            {/* Centered Donut Chart with Center Text */}
-            <div className={styles.chartWrapper}>
+            <div className="relative mx-auto flex h-44 w-44 shrink-0 items-center justify-center">
               {mounted ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -95,31 +93,30 @@ export function PaymentMethodDonut() {
               )}
 
               {/* Center Text overlay inside Donut */}
-              <div className={styles.centerOverlay}>
-                <span className={styles.totalAmount}>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-xs font-extrabold text-zinc-900 dark:text-white">
                   {currency} {formatAmount(totalAmount)}
                 </span>
-                <span className={styles.totalTickets}>{formatNumber(totalTickets)} tkts</span>
+                <span className="text-[10px] font-medium text-zinc-500">{formatNumber(totalTickets)} tkts</span>
               </div>
             </div>
 
-            {/* Legend List underneath chart */}
-            <div className={styles.legendList}>
+            <div className="flex w-full flex-col gap-2.5 border-t border-zinc-100 pt-2 dark:border-zinc-800">
               {paymentData.map((item: any) => (
-                <div key={item.key} className={styles.legendItem}>
-                  <div className={styles.methodInfo}>
+                <div key={item.key} className="flex w-full items-center justify-between gap-2 text-xs">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={styles.colorDot}
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className={styles.methodName}>
+                    <span className="truncate font-semibold text-zinc-800 dark:text-zinc-200">
                       {item.name}
                     </span>
-                    <span className={styles.countSubtext}>
+                    <span className="shrink-0 text-[11px] font-normal text-zinc-400">
                       · {item.count} tkts
                     </span>
                   </div>
-                  <span className={styles.amountText}>
+                  <span className="shrink-0 text-right font-mono font-bold text-zinc-900 dark:text-zinc-100">
                     {currency} {formatAmount(item.amount)}
                   </span>
                 </div>

@@ -147,65 +147,65 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const volParams: Record<string, any> = { id: eventId };
       if (activeKey) volParams.venue_key = activeKey;
       const volRes: any = await geteventVolume(jsonToUrlParams(volParams));
-      if (volRes?.data) {
+      if (volRes?.data && !volRes?.isAxiosError) {
         setVolume(volRes.data.data || volRes.data);
       }
 
-      // 2. Fetch Checking Status (event-checking-status)
-      const statusParams: Record<string, any> = { event_id: eventId };
-      if (activeKey) statusParams.venue_key = activeKey;
-      const statusRes: any = await getEventS(jsonToUrlParams(statusParams));
-      const statusItems = extractArrayData(statusRes);
-      if (statusItems.length > 0) {
-        setTicketStatus(statusItems);
-      } else if (statusRes?.data?.data) {
-        setTicketStatus(statusRes.data.data);
-      } else if (statusRes?.data) {
-        setTicketStatus(statusRes.data);
+      // Checking status, tickets, and participants require venue_key.
+      if (!activeKey) {
+        setTicketStatus(null);
+        setTickets([]);
+        setParticipants([]);
+      } else {
+        const statusParams: Record<string, any> = { event_id: eventId, venue_key: activeKey };
+        const statusRes: any = await getEventS(jsonToUrlParams(statusParams));
+        const statusItems = extractArrayData(statusRes);
+        if (statusItems.length > 0) {
+          setTicketStatus(statusItems);
+        } else if (statusRes?.data?.data && !statusRes?.isAxiosError) {
+          setTicketStatus(statusRes.data.data);
+        } else if (statusRes?.data && !statusRes?.isAxiosError) {
+          setTicketStatus(statusRes.data);
+        }
+
+        const ticketParams: Record<string, any> = { event_id: eventId, venue_key: activeKey };
+        const ticketRes: any = await getTickent(jsonToUrlParams(ticketParams));
+        const ticketItems = extractArrayData(ticketRes);
+        if (ticketItems.length > 0) {
+          setTickets(ticketItems);
+        } else if (ticketRes?.data?.data && !ticketRes?.isAxiosError) {
+          setTickets(ticketRes.data.data);
+        }
+
+        const partParams: Record<string, any> = {
+          page: currentPage,
+          limit: 10,
+          id: eventId,
+          venue_key: activeKey,
+        };
+        const partRes: any = await getPartiDetails(jsonToUrlParams(partParams));
+        const partItems = extractArrayData(partRes);
+        if (!partRes?.isAxiosError && (partItems.length > 0 || partRes?.data)) {
+          setParticipants(partItems.length > 0 ? partItems : partRes?.data?.data || []);
+          if (dataType === "participants") {
+            setDataCount(partRes?.data?.count || partRes?.data?.total || partItems.length);
+          }
+        }
       }
 
-      // 3. Fetch Analytics
+      // Analytics can run with or without a venue slot.
       const analyticsParams: Record<string, any> = { id: eventId };
       if (activeKey) analyticsParams.venue_key = activeKey;
       const analyticsRes: any = await getEventAnalytics(jsonToUrlParams(analyticsParams));
-      if (analyticsRes?.data) {
+      if (analyticsRes?.data && !analyticsRes?.isAxiosError) {
         const analyticsData = analyticsRes.data.data || analyticsRes.data;
         setAnalytics(analyticsData);
 
-        // Merge analytics event details into eventData if present
         if (analyticsData?.event) {
           setEventData((prev: any) => ({
             ...(prev || {}),
             ...analyticsData.event,
           }));
-        }
-      }
-
-      // 4. Fetch Tickets by Slot (tickets-by-slot)
-      const ticketParams: Record<string, any> = { event_id: eventId };
-      if (activeKey) ticketParams.venue_key = activeKey;
-      const ticketRes: any = await getTickent(jsonToUrlParams(ticketParams));
-      const ticketItems = extractArrayData(ticketRes);
-      if (ticketItems.length > 0) {
-        setTickets(ticketItems);
-      } else if (ticketRes?.data?.data) {
-        setTickets(ticketRes.data.data);
-      }
-
-      // 5. Fetch Participants (event-participants)
-      const partParams: Record<string, any> = {
-        page: currentPage,
-        limit: 10,
-        id: eventId,
-        search_text: "",
-      };
-      if (activeKey) partParams.venue_key = activeKey;
-      const partRes: any = await getPartiDetails(jsonToUrlParams(partParams));
-      const partItems = extractArrayData(partRes);
-      if (partItems.length > 0 || partRes?.data) {
-        setParticipants(partItems.length > 0 ? partItems : partRes?.data?.data || []);
-        if (dataType === "participants") {
-          setDataCount(partRes?.data?.count || partRes?.data?.total || partItems.length);
         }
       }
 

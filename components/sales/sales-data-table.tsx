@@ -11,8 +11,6 @@ import { TicketUpgradeModal } from "./ticket-upgrade-modal";
 import { TicketCancellationModal } from "./ticket-cancellation-modal";
 import { ResendConfirmationModal } from "./resend-confirmation-modal";
 import { RefundRequestModal } from "./refund-request-modal";
-import styles from "./sales-data-table.module.scss";
-
 export function SalesDataTable() {
   const {
     participants,
@@ -118,7 +116,7 @@ export function SalesDataTable() {
   }
 
   return (
-    <div className={styles.cardContainer}>
+    <div className="flex flex-col gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       {/* Top Tab Bar: Participants List vs Notify Me */}
       <div className="flex items-center gap-6 px-4 pt-4 border-b border-zinc-200 dark:border-zinc-800">
         <button
@@ -149,10 +147,9 @@ export function SalesDataTable() {
       </div>
 
       {/* Filter Header Bar */}
-      <div className={styles.topFilterBar}>
-        {/* Search Input */}
-        <div className={styles.searchBox}>
-          <Search className={styles.searchIcon} />
+      <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder={
@@ -162,20 +159,23 @@ export function SalesDataTable() {
             }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
+            className="h-10 w-full rounded-xl border border-zinc-200 bg-zinc-50 pr-4 pl-10 text-xs text-zinc-900 outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-[#00d07d]/30 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-100"
           />
         </div>
 
         {/* Filters (Participants only) */}
         {dataType === "participants" && (
-          <div className={styles.filterGroup}>
-            {/* Tier Tabs */}
-            <div className={styles.tierTabs}>
+          <div className="flex w-full flex-wrap items-center gap-3 md:w-auto">
+            <div className="flex items-center rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
               {["All Tiers", "General", "VIP", "Gold"].map((tier) => (
                 <button
                   key={tier}
                   onClick={() => setSelectedTier(tier)}
-                  className={`${styles.tierBtn} ${selectedTier === tier ? styles.active : ""}`}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                    selectedTier === tier
+                      ? "bg-[#043825] text-white shadow-sm"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                  }`}
                 >
                   {tier}
                 </button>
@@ -183,26 +183,26 @@ export function SalesDataTable() {
             </div>
 
             {/* Status Select Dropdown */}
-            <div className={styles.selectWrapper}>
+            <div className="relative">
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className={styles.selectInput}
+                className="h-10 cursor-pointer appearance-none rounded-xl border border-zinc-200 bg-white pr-8 pl-3 text-xs font-semibold text-zinc-800 outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
               >
                 <option value="All">Status: All</option>
                 <option value="Completed">Status: Completed</option>
                 <option value="Refunded">Status: Refunded</option>
               </select>
-              <ChevronDown className={styles.selectChevron} />
+              <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
             </div>
           </div>
         )}
       </div>
 
       {/* Table Container */}
-      <div className={styles.tableWrapper}>
+      <div className="overflow-x-auto">
         {dataType === "participants" ? (
-          <table className={styles.table}>
+          <table className="w-full min-w-[900px] border-collapse text-left [&_td]:px-4 [&_td]:py-3.5 [&_th]:px-4 [&_th]:py-3 [&_thead_tr]:border-b [&_thead_tr]:border-zinc-100 [&_thead_tr]:text-[11px] [&_thead_tr]:font-bold [&_thead_tr]:tracking-wider [&_thead_tr]:text-zinc-400 [&_thead_tr]:uppercase dark:[&_thead_tr]:border-zinc-800 [&_tbody]:text-xs [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-100 [&_tbody_tr]:transition-colors [&_tbody_tr]:hover:bg-zinc-50/80 dark:[&_tbody_tr]:border-zinc-800 dark:[&_tbody_tr]:hover:bg-zinc-800/40">
             <thead>
               <tr>
                 <th>TRAN ID</th>
@@ -220,15 +220,15 @@ export function SalesDataTable() {
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => (
                   <tr key={order.id}>
-                    <td className={styles.tranId}>
+                    <td className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
                       {order.transactionId}
                     </td>
                     <td>
-                      <div className={styles.attendeeCell}>
-                        <span className={styles.name}>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-zinc-900 dark:text-zinc-100">
                           {order.attendeeName}
                         </span>
-                        <span className={styles.email}>{order.attendeeEmail}</span>
+                        <span className="text-[11px] text-zinc-400">{order.attendeeEmail}</span>
                       </div>
                     </td>
                     <td>{getTierBadge(order.tier)}</td>
@@ -236,12 +236,12 @@ export function SalesDataTable() {
                       {order.quantity}
                     </td>
                     <td>
-                      <div className={styles.gatewayCell}>
+                      <div className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-300">
                         {getGatewayDot(order.gatewayType)}
                         <span>{order.gateway}</span>
                       </div>
                     </td>
-                    <td className={styles.amount}>
+                    <td className="font-mono font-extrabold text-zinc-900 dark:text-zinc-100">
                       Rs. {formatNumber(order.amount)}.00
                     </td>
                     <td style={{ color: "#71717a" }}>{order.timestamp}</td>
@@ -252,7 +252,7 @@ export function SalesDataTable() {
                       <div className="relative inline-block text-left">
                         <button
                           onClick={() => setActiveMenuId(activeMenuId === order.id ? null : order.id)}
-                          className={styles.actionBtn}
+                          className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-all hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </button>
@@ -310,7 +310,7 @@ export function SalesDataTable() {
           </table>
         ) : (
           /* Notify Me Table */
-          <table className={styles.table}>
+          <table className="w-full min-w-[900px] border-collapse text-left [&_td]:px-4 [&_td]:py-3.5 [&_th]:px-4 [&_th]:py-3 [&_thead_tr]:border-b [&_thead_tr]:border-zinc-100 [&_thead_tr]:text-[11px] [&_thead_tr]:font-bold [&_thead_tr]:tracking-wider [&_thead_tr]:text-zinc-400 [&_thead_tr]:uppercase dark:[&_thead_tr]:border-zinc-800 [&_tbody]:text-xs [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-100 [&_tbody_tr]:transition-colors [&_tbody_tr]:hover:bg-zinc-50/80 dark:[&_tbody_tr]:border-zinc-800 dark:[&_tbody_tr]:hover:bg-zinc-800/40">
             <thead>
               <tr>
                 <th>SERIAL NUMBER</th>
@@ -358,13 +358,13 @@ export function SalesDataTable() {
       </div>
 
       {/* Footer Pagination */}
-      <div className={styles.paginationFooter}>
-        <span className={styles.showingText}>
-          Showing <span className={styles.highlight}>{startItem}–{endItem}</span> of{" "}
-          <span className={styles.highlight}>{totalCount}</span> {dataType === "notifies" ? "requests" : "participants"}
+      <div className="flex flex-col items-center justify-between gap-4 border-t border-zinc-100 pt-3 text-xs sm:flex-row dark:border-zinc-800">
+        <span className="font-medium text-zinc-500">
+          Showing <span className="font-bold text-zinc-900 dark:text-zinc-100">{startItem}–{endItem}</span> of{" "}
+          <span className="font-bold text-zinc-900 dark:text-zinc-100">{totalCount}</span> {dataType === "notifies" ? "requests" : "participants"}
         </span>
 
-        <div className={styles.btnGroup}>
+        <div className="flex items-center gap-1.5">
           <button
             disabled={currentPage <= 1}
             onClick={() => {
@@ -372,7 +372,7 @@ export function SalesDataTable() {
               setCurrentPage(newPage);
               if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
             }}
-            className={`${styles.pageNavBtn} ${currentPage <= 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+            className={`flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 ${currentPage <= 1 ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             <span>Previous</span>
@@ -385,7 +385,11 @@ export function SalesDataTable() {
                 setCurrentPage(num);
                 if (dataType === "notifies") fetchNotifies(selectedEventId, num);
               }}
-              className={`${styles.numBtn} ${currentPage === num ? styles.activePage : ""} cursor-pointer`}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg font-semibold ${
+                currentPage === num
+                  ? "bg-[#043825] font-bold text-white shadow-sm"
+                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              }`}
             >
               {num}
             </button>
@@ -398,7 +402,7 @@ export function SalesDataTable() {
               setCurrentPage(newPage);
               if (dataType === "notifies") fetchNotifies(selectedEventId, newPage);
             }}
-            className={`${styles.pageNavBtn} ${currentPage >= totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+            className={`flex items-center gap-1 rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-600 hover:bg-zinc-100 disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 ${currentPage >= totalPages ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
           >
             <span>Next</span>
             <ChevronRight className="h-3.5 w-3.5" />

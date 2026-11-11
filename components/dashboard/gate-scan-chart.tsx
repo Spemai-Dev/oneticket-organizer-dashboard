@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatNumber } from "../../lib/utils";
-import styles from "./gate-scan-chart.module.scss";
 
 export function GateScanChart() {
   const [mounted, setMounted] = useState(false);
@@ -57,25 +56,24 @@ export function GateScanChart() {
   const efficiency = liveCapacity > 0 ? Math.round((liveScanned / liveCapacity) * 100) : 0;
 
   return (
-    <div className={styles.cardContainer}>
-      <div className={styles.headerRow}>
-        <div className={styles.titleGroup}>
-          <h3 className={styles.title}>Hourly Gate Entry & Scan Velocity</h3>
-          <p className={styles.subtitle}>Real-time ticket scans per 30-min window</p>
+    <div className="flex h-full flex-col justify-between gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-base font-bold text-zinc-900 dark:text-white">Hourly Gate Entry & Scan Velocity</h3>
+          <p className="text-xs text-zinc-500">Real-time ticket scans per 30-min window</p>
         </div>
-        <div className={styles.badgeGroup}>
-          <span className={styles.liveBadge}>
-            <span className={styles.dot} />
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
             Total Scanned: {peakText}
           </span>
-          <span className={styles.speedBadge}>
+          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
             Live Scanner Feed
           </span>
         </div>
       </div>
 
-      {/* Chart container */}
-      <div className={styles.chartContainer}>
+      <div className="mt-2 h-56 w-full">
         {mounted ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -130,18 +128,18 @@ export function GateScanChart() {
         )}
       </div>
 
-      <div className={styles.metricsRow}>
-        <div className={styles.metricBox}>
-          <span className={styles.label}>TOTAL SCANNED</span>
-          <span className={styles.value}>{scannedText}</span>
+      <div className="grid grid-cols-3 gap-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">TOTAL SCANNED</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{scannedText}</span>
         </div>
-        <div className={styles.metricBox}>
-          <span className={styles.label}>CHECK-IN RATE</span>
-          <span className={styles.value}>{efficiency}% Checked In</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">CHECK-IN RATE</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{efficiency}% Checked In</span>
         </div>
-        <div className={styles.metricBox}>
-          <span className={styles.label}>GATE STATUS</span>
-          <span className={styles.value} style={{ color: "#00d07d" }}>Active & Verified</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">GATE STATUS</span>
+          <span className="text-sm font-bold text-[#00d07d]">Active & Verified</span>
         </div>
       </div>
     </div>
