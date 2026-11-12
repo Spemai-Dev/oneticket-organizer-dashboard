@@ -29,6 +29,12 @@ export function formatAmount(num: number, decimals: number = 2): string {
   }).format(val);
 }
 
+export function ticketPageUrl(userId?: string | null): string | null {
+  const id = String(userId || "").trim();
+  if (!id) return null;
+  return `https://tickets.oneticket.lk/ticket/${encodeURIComponent(id)}/tickets`;
+}
+
 export function getImageUrl(path?: string | null, fallback: string = "/placeholder.png"): string {
   if (!path) return fallback;
   if (path.startsWith("http://") || path.startsWith("https://")) {

@@ -60,12 +60,25 @@ export interface EventParticipantDetailParams {
   transaction_id: string;
 }
 
+export interface ParticipantQrTicket {
+  qr_code: string;
+  user_id?: string | null;
+  is_scanned?: boolean;
+  scanned_at?: string | null;
+  seat?: string | null;
+  holder_name?: string | null;
+  holder_email?: string | null;
+  holder_phone?: string | null;
+  was_transferred?: boolean;
+}
+
 export interface ParticipantTicketItem {
   ticket_id: number | string;
   ticket_name: string;
   ticket_amount: number | string;
   count: number;
   seats?: string[];
+  qr_tickets?: ParticipantQrTicket[];
 }
 
 export interface ParticipantTicketUpgradeItem {
