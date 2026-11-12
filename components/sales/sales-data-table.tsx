@@ -17,7 +17,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useDashboard } from "../../lib/context/dashboard-context";
-import { formatAmount, ticketPageUrl } from "../../lib/utils";
+import { formatAmount } from "../../lib/utils";
 import { getRefundStatusMeta } from "../../lib/utils/participant-helpers";
 import { Badge } from "../ui/badge";
 import { TicketUpgradeModal } from "./ticket-upgrade-modal";
@@ -40,7 +40,7 @@ interface ParticipantListRow {
   customer_email?: string;
   qr_code?: string;
   qr_count?: number;
-  ticket_user_id?: string;
+  qr_link?: string;
   is_refund?: boolean;
   is_refund_init?: boolean;
   is_refund_rejected?: boolean;
@@ -360,7 +360,7 @@ export function SalesDataTable() {
                 participantRows.map((p, idx) => {
                   const rowKey = p.transaction_reference || String(p.id || idx);
                   const qrCode = String(p.qr_code || "").trim();
-                  const ticketUrl = ticketPageUrl(p.ticket_user_id);
+                  const ticketUrl = String(p.qr_link || "").trim();
                   const qrLabel = ticketUrl || qrCode;
                   const qrCount = Number(p.qr_count || (qrCode ? 1 : 0));
                   const isCopied = copiedRef === rowKey;

@@ -23,7 +23,7 @@ import {
   resendUpgradeConfirmation,
 } from "../../lib/services/dashboard";
 import { useDashboard } from "../../lib/context/dashboard-context";
-import { formatAmount, ticketPageUrl } from "../../lib/utils";
+import { formatAmount } from "../../lib/utils";
 import {
   canUpgradeParticipantTicket,
   getRefundStatusMeta,
@@ -110,7 +110,7 @@ function TicketQrDetails({
       </div>
       {qrTickets.map((qr) => {
         const holder = [qr.holder_name, qr.holder_email, qr.holder_phone].filter(Boolean).join(" · ");
-        const ticketUrl = ticketPageUrl(qr.user_id);
+        const ticketUrl = String(qr.qr_link || "").trim();
         return (
           <div
             key={qr.qr_code}
