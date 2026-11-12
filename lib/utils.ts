@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { environment, ticket_page_base_url } from "./environment";
+import { environment } from "./environment";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -27,13 +27,6 @@ export function formatAmount(num: number, decimals: number = 2): string {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(val);
-}
-
-export function ticketPageUrl(userId?: string | null): string | null {
-  const id = String(userId || "").trim();
-  if (!id) return null;
-  const base = ticket_page_base_url.replace(/\/$/, "");
-  return `${base}/ticket/${encodeURIComponent(id)}/tickets`;
 }
 
 export function getImageUrl(path?: string | null, fallback: string = "/placeholder.png"): string {
