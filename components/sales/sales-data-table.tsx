@@ -310,11 +310,10 @@ export function SalesDataTable() {
                   key={opt.label}
                   type="button"
                   onClick={() => handleCheckInFilterChange(opt.value)}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                    checkInFilter === opt.value
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${checkInFilter === opt.value
                       ? "bg-[#043825] text-white shadow-sm"
                       : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -551,7 +550,7 @@ export function SalesDataTable() {
                     <td className="font-bold text-zinc-900 dark:text-white">
                       {n.last_name || "-"}
                     </td>
-                    <td className="text-zinc-600 dark:text-zinc-300">
+                    <td className="text-zinc-600 dark:text-zinc-300c">
                       {n.email || "N/A"}
                     </td>
                     <td className="font-mono text-zinc-600 dark:text-zinc-300">
@@ -599,11 +598,10 @@ export function SalesDataTable() {
                 key={num}
                 type="button"
                 onClick={() => setCurrentPage(num)}
-                className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg font-semibold ${
-                  currentPage === num
+                className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg font-semibold ${currentPage === num
                     ? "bg-[#043825] font-bold text-white shadow-sm"
                     : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                }`}
+                  }`}
               >
                 {num}
               </button>
