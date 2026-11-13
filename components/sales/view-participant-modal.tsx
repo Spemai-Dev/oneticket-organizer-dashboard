@@ -87,15 +87,42 @@ function getErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-function TicketQrDetails({
-  qrTickets,
-  copiedQr,
-  onCopy,
+function PersonBlock({
+  label,
+  name,
+  email,
+  phone,
 }: {
-  qrTickets: ParticipantQrTicket[];
-  copiedQr: string | null;
-  onCopy: (qrCode: string) => void;
+  label: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">{label}</span>
+      <span className="text-xs font-semibold text-zinc-900 dark:text-white">{name || "Unknown"}</span>
+      {email ? <span className="text-[11px] text-zinc-500 break-all">{email}</span> : null}
+      {phone ? <span className="text-[11px] text-zinc-500">{phone}</span> : null}
+    </div>
+  );
+}
+
+function TicketQrDetails({ qrTickets }: { qrTickets: ParticipantQrTicket[] }) {
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  const copyLink = async (url: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      }
+      setCopiedLink(url);
+      setTimeout(() => setCopiedLink(null), 1500);
+    } catch {
+      // Ignore clipboard failure in restricted contexts
+    }
+  };
+
   if (qrTickets.length === 0) {
     return (
       <p className="text-[11px] text-zinc-400">No QR issued for this ticket.</p>
@@ -108,60 +135,80 @@ function TicketQrDetails({
         <QrCode className="h-3.5 w-3.5 text-[#00d07d]" />
         <span>QR details</span>
       </div>
-      {qrTickets.map((qr) => {
-        const holder = [qr.holder_name, qr.holder_email, qr.holder_phone].filter(Boolean).join(" · ");
-        const ticketUrl = String(qr.qr_link || "").trim();
+      {qrTickets.map((qr, index) => {
+        const assigned = Boolean(qr.was_transferred);
+        const ticketUrl = assigned ? String(qr.qr_link || "").trim() : "";
         return (
           <div
-            key={qr.qr_code}
-            className="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2.5 flex flex-col gap-1.5"
+            key={`${qr.holder_email || qr.assigned_to_email || "ticket"}-${index}`}
+            className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
           >
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-mono text-[11px] font-bold text-zinc-900 dark:text-white break-all">
-                {qr.qr_code}
-              </span>
-              <button
-                type="button"
-                onClick={() => onCopy(ticketUrl || qr.qr_code)}
-                title={ticketUrl ? "Copy ticket link" : "Copy QR code"}
-                className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer shrink-0"
-              >
-                {copiedQr === (ticketUrl || qr.qr_code) ? (
-                  <Check className="h-3.5 w-3.5 text-[#00d07d]" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-              </button>
-            </div>
-            {ticketUrl ? (
-              <a
-                href={ticketUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline break-all"
-              >
-                <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-                {ticketUrl}
-              </a>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant={qr.is_scanned ? "emerald" : "gold"}>
+            {assigned ? (
+              <>
+                <PersonBlock
+                  label="Assigned by"
+                  name={qr.assigned_by_name}
+                  email={qr.assigned_by_email}
+                  phone={qr.assigned_by_phone}
+                />
+                <PersonBlock
+                  label="Assigned to"
+                  name={qr.assigned_to_name}
+                  email={qr.assigned_to_email}
+                  phone={qr.assigned_to_phone}
+                />
+              </>
+            ) : (
+              <PersonBlock
+                label="Ticket holder"
+                name={qr.holder_name}
+                email={qr.holder_email}
+                phone={qr.holder_phone}
+              />
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={qr.is_scanned ? "emerald" : "gold"} className="whitespace-nowrap">
                 {qr.is_scanned ? "Scanned" : "Not scanned"}
               </Badge>
               {qr.seat ? (
-                <span className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[11px] font-mono font-semibold text-zinc-700 dark:text-zinc-200">
+                <span className="rounded-md bg-zinc-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                   Seat {qr.seat}
                 </span>
               ) : null}
-              {qr.was_transferred ? (
-                <span className="text-[11px] font-semibold text-zinc-500">Transferred</span>
+              {qr.scanned_at ? (
+                <span className="text-[11px] text-zinc-400">Scanned {qr.scanned_at}</span>
               ) : null}
             </div>
-            {holder ? (
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 break-all">{holder}</p>
-            ) : null}
-            {qr.scanned_at ? (
-              <p className="text-[11px] text-zinc-400">Scanned {qr.scanned_at}</p>
+
+            {ticketUrl ? (
+              <div className="flex flex-col gap-1 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">
+                  Ticket link
+                </span>
+                <div className="flex items-start gap-2">
+                  <a
+                    href={ticketUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 flex-1 break-all text-[11px] font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+                  >
+                    {ticketUrl}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(ticketUrl)}
+                    title="Copy ticket link"
+                    className="shrink-0 cursor-pointer rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white"
+                  >
+                    {copiedLink === ticketUrl ? (
+                      <Check className="h-3.5 w-3.5 text-[#00d07d]" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
             ) : null}
           </div>
         );
@@ -200,7 +247,6 @@ export function ViewParticipantModal({
   const [isSubmittingSms, setIsSubmittingSms] = useState(false);
   const [resendingUpgradeId, setResendingUpgradeId] = useState<number | string | null>(null);
   const [copiedTx, setCopiedTx] = useState(false);
-  const [copiedQr, setCopiedQr] = useState<string | null>(null);
 
   const [upgradeTicket, setUpgradeTicket] = useState<ParticipantTicketItem | null>(null);
   const [cancelTicket, setCancelTicket] = useState<ParticipantTicketItem | null>(null);
@@ -298,18 +344,6 @@ export function ViewParticipantModal({
       }
       setCopiedTx(true);
       setTimeout(() => setCopiedTx(false), 1500);
-    } catch {
-      // Ignore clipboard failure in restricted contexts
-    }
-  };
-
-  const handleCopyQr = async (qrCode: string) => {
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(qrCode);
-      }
-      setCopiedQr(qrCode);
-      setTimeout(() => setCopiedQr(null), 1500);
     } catch {
       // Ignore clipboard failure in restricted contexts
     }
@@ -723,11 +757,7 @@ export function ViewParticipantModal({
                                           </button>
                                         </div>
 
-                                        <TicketQrDetails
-                                          qrTickets={qrTickets}
-                                          copiedQr={copiedQr}
-                                          onCopy={handleCopyQr}
-                                        />
+                                        <TicketQrDetails qrTickets={qrTickets} />
                                       </div>
                                     </td>
                                   </tr>
