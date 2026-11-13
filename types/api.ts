@@ -61,8 +61,6 @@ export interface EventParticipantDetailParams {
 }
 
 export interface ParticipantQrTicket {
-  qr_code: string;
-  user_id?: string | null;
   qr_link?: string | null;
   is_scanned?: boolean;
   scanned_at?: string | null;
@@ -71,6 +69,12 @@ export interface ParticipantQrTicket {
   holder_email?: string | null;
   holder_phone?: string | null;
   was_transferred?: boolean;
+  assigned_by_name?: string | null;
+  assigned_by_email?: string | null;
+  assigned_by_phone?: string | null;
+  assigned_to_name?: string | null;
+  assigned_to_email?: string | null;
+  assigned_to_phone?: string | null;
 }
 
 export interface ParticipantTicketItem {

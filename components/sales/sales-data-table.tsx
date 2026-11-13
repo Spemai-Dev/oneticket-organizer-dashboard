@@ -38,7 +38,6 @@ interface ParticipantListRow {
   datetime?: string;
   customer_name?: string;
   customer_email?: string;
-  qr_code?: string;
   qr_count?: number;
   qr_link?: string;
   is_refund?: boolean;
@@ -359,10 +358,8 @@ export function SalesDataTable() {
               {participantRows.length > 0 ? (
                 participantRows.map((p, idx) => {
                   const rowKey = p.transaction_reference || String(p.id || idx);
-                  const qrCode = String(p.qr_code || "").trim();
                   const ticketUrl = String(p.qr_link || "").trim();
-                  const qrLabel = ticketUrl || qrCode;
-                  const qrCount = Number(p.qr_count || (qrCode ? 1 : 0));
+                  const qrCount = Number(p.qr_count || (ticketUrl ? 1 : 0));
                   const isCopied = copiedRef === rowKey;
                   const refundMeta = getRefundStatusMeta(p);
                   const formattedDate = p.datetime
@@ -393,29 +390,23 @@ export function SalesDataTable() {
                         </div>
                       </td>
                       <td>
-                        {qrLabel ? (
+                        {ticketUrl ? (
                           <div className="inline-flex items-center gap-1.5">
-                            {ticketUrl ? (
-                              <a
-                                href={ticketUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
-                                title={ticketUrl}
-                              >
-                                {ticketUrl.length > 28 ? `${ticketUrl.slice(0, 28)}...` : ticketUrl}
-                              </a>
-                            ) : (
-                              <span className="text-xs font-mono text-zinc-600 dark:text-zinc-300" title={qrCode}>
-                                {qrCode.length > 18 ? `${qrCode.slice(0, 18)}...` : qrCode}
-                              </span>
-                            )}
+                            <a
+                              href={ticketUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-mono text-emerald-600 dark:text-emerald-400 hover:underline"
+                              title={ticketUrl}
+                            >
+                              {ticketUrl.length > 28 ? `${ticketUrl.slice(0, 28)}...` : ticketUrl}
+                            </a>
                             {qrCount > 1 && (
                               <span className="text-[10px] font-semibold text-zinc-400">+{qrCount - 1}</span>
                             )}
                             <button
                               type="button"
-                              onClick={(e) => handleCopyQr(qrLabel, rowKey, e)}
+                              onClick={(e) => handleCopyQr(ticketUrl, rowKey, e)}
                               title={isCopied ? "Copied!" : "Copy ticket link"}
                               aria-label={isCopied ? "Copied" : "Copy ticket link"}
                               className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
