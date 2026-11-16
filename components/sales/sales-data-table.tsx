@@ -20,6 +20,7 @@ import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatAmount } from "../../lib/utils";
 import { getRefundStatusMeta } from "../../lib/utils/participant-helpers";
 import { Badge } from "../ui/badge";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { TicketUpgradeModal } from "./ticket-upgrade-modal";
 import { TicketCancellationModal } from "./ticket-cancellation-modal";
 import { ResendConfirmationModal } from "./resend-confirmation-modal";
@@ -99,7 +100,6 @@ export function SalesDataTable() {
     analytics,
   } = useDashboard();
 
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<
     "view" | "upgrade" | "cancel" | "resend" | "refund" | null
   >(null);
@@ -202,7 +202,6 @@ export function SalesDataTable() {
   ) => {
     setTargetRow(row);
     setActiveModal(action);
-    setActiveMenuId(null);
   };
 
   const participantRows: ParticipantListRow[] = Array.isArray(participants)
@@ -338,7 +337,7 @@ export function SalesDataTable() {
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-h-[300px]">
         {dataType === "participants" ? (
           <table className={TABLE_CLASSNAME}>
             <thead>
@@ -442,69 +441,61 @@ export function SalesDataTable() {
                         </Badge>
                       </td>
                       <td className="relative text-right">
-                        <div className="relative inline-block text-left">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setActiveMenuId(activeMenuId === rowKey ? null : rowKey)
-                            }
-                            className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-all hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
-                            aria-label="More participant actions"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <button
+                              type="button"
+                              className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition-all hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                              aria-label="More participant actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenu.Trigger>
 
-                          {activeMenuId === rowKey && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-10 cursor-default"
-                                onClick={() => setActiveMenuId(null)}
-                              />
-                              <div className="absolute right-0 mt-1 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-20 py-1 flex flex-col text-xs">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "view")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <Eye className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                                  <span>View Participant</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "upgrade")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-emerald-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                                  <span>Upgrade Ticket</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "cancel")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-red-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                                  <span>Cancel Ticket</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "resend")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-blue-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <Send className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-                                  <span>Resend Email/SMS</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenAction(p, "refund")}
-                                  className="flex items-center gap-2 px-3.5 py-2 text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 text-left transition-colors cursor-pointer"
-                                >
-                                  <RotateCcw className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                  <span>Full Refund Request</span>
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content
+                              align="end"
+                              sideOffset={4}
+                              className="z-50 min-w-48 rounded-xl border border-zinc-200 bg-white p-1 text-xs shadow-xl outline-none dark:border-zinc-800 dark:bg-zinc-900"
+                            >
+                              <DropdownMenu.Item
+                                onClick={() => handleOpenAction(p, "view")}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-emerald-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-emerald-400"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                <span>View Participant</span>
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                onClick={() => handleOpenAction(p, "upgrade")}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-emerald-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-emerald-400"
+                              >
+                                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                <span>Upgrade Ticket</span>
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                onClick={() => handleOpenAction(p, "cancel")}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-red-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-red-400"
+                              >
+                                <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                                <span>Cancel Ticket</span>
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                onClick={() => handleOpenAction(p, "resend")}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-blue-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
+                              >
+                                <Send className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                                <span>Resend Email/SMS</span>
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                onClick={() => handleOpenAction(p, "refund")}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-amber-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-amber-400"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                <span>Full Refund Request</span>
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
                       </td>
                     </tr>
                   );
