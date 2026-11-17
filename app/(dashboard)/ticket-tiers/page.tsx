@@ -2,24 +2,78 @@
 
 import React from "react";
 import { TopbarHeader } from "../../../components/layout/topbar-header";
+import { ScheduleFilter } from "../../../components/dashboard/schedule-filter";
 import { useDashboard } from "../../../lib/context/dashboard-context";
 import { formatNumber, formatAmount } from "../../../lib/utils";
 import { Tags } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 
-export default function TicketTiersPage() {
-  const { tickets, eventData, analytics } = useDashboard();
+interface RawTierItem {
+  id?: string | number;
+  ticket_id?: string | number;
+  ticket_name?: string;
+  name?: string;
+  tier_name?: string;
+  ticket_amount?: number | string;
+  ticket_visualize_amount?: number | string;
+  price?: number | string;
+  ticket_price?: number | string;
+  total_tickets?: number | string;
+  total?: number | string;
+  remaining_tickets?: number | string;
+  available_tickets?: number | string;
+  available?: number | string;
+  sold_tickets?: number | string;
+  is_sold_out?: boolean;
+  currency?: string;
+  ticket_category_color?: string;
+  is_active?: boolean;
+  is_free_ticket?: boolean;
+  ticket_description?: string;
+}
 
-  const hasLiveTickets = tickets && tickets.length > 0;
-  const rawTierList = hasLiveTickets
-    ? tickets
+interface DisplayTierItem {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  total: number;
+  sold: number;
+  available: number;
+  status: string;
+  color: string;
+  isFree: boolean;
+  description: string;
+}
+
+export default function TicketTiersPage() {
+  const {
+    tickets,
+    eventData,
+    analytics,
+    selectedKey,
+    venues,
+    selectedVenueIndex,
+    selectedDayIndex,
+    selectedTimeIndex,
+    loading,
+  } = useDashboard();
+
+  const hasLiveTickets = Array.isArray(tickets) && tickets.length > 0;
+
+  // When a specific venue slot key is selected, display slot tickets
+  // If no venue key is selected, fall back to eventData or analytics ticket tiers
+  const rawTierList: RawTierItem[] = selectedKey
+    ? (tickets as RawTierItem[]) || []
+    : hasLiveTickets
+    ? (tickets as RawTierItem[])
     : Array.isArray(eventData?.ticket_tiers) && eventData.ticket_tiers.length > 0
-    ? eventData.ticket_tiers
+    ? (eventData.ticket_tiers as RawTierItem[])
     : Array.isArray(analytics?.event?.ticket_tiers) && analytics.event.ticket_tiers.length > 0
-    ? analytics.event.ticket_tiers
+    ? (analytics.event.ticket_tiers as RawTierItem[])
     : [];
 
-  const displayTiers = rawTierList.map((t: any, idx: number) => {
+  const displayTiers: DisplayTierItem[] = rawTierList.map((t: RawTierItem, idx: number) => {
     const price = Number(t.ticket_amount || t.ticket_visualize_amount || t.price || t.ticket_price || 0);
     const total = Number(t.total_tickets || t.total || 0);
     const remaining = Number(t.remaining_tickets || t.available_tickets || t.available || 0);
@@ -47,6 +101,13 @@ export default function TicketTiersPage() {
   });
 
   const activeTitle = eventData?.event_name || analytics?.event?.event_name || "Active Event";
+  const currentVenue = venues?.[selectedVenueIndex]?.venue;
+  const currentDay = venues?.[selectedVenueIndex]?.days?.[selectedDayIndex]?.day;
+  const currentTime = venues?.[selectedVenueIndex]?.days?.[selectedDayIndex]?.times?.[selectedTimeIndex];
+  const timeLabel = currentTime ? `${currentTime.start_time} - ${currentTime.end_time}` : "";
+  const venueInfo = currentVenue
+    ? `${currentVenue}${currentDay ? ` · ${currentDay}` : ""}${timeLabel ? ` · ${timeLabel}` : ""}`
+    : "";
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,19 +120,30 @@ export default function TicketTiersPage() {
           </h2>
           <p className="text-xs text-zinc-500">
             Live slot allocation and pricing tiers for {activeTitle}
+            {venueInfo && (
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300"> ({venueInfo})</span>
+            )}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Interactive Location, Date & Time Schedule Filter */}
+      <ScheduleFilter />
+
+      {/* Tier Cards Grid */}
+      <div className={loading ? "grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60 transition-opacity" : "grid grid-cols-1 md:grid-cols-3 gap-6"}>
         {displayTiers.length === 0 ? (
           <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-12 text-center flex flex-col items-center justify-center gap-3">
             <Tags className="h-8 w-8 text-zinc-400" />
             <h3 className="font-bold text-sm text-zinc-700 dark:text-zinc-300">No Ticket Tiers Configured</h3>
-            <p className="text-xs text-zinc-400">There are no active ticket tiers allocated for this event.</p>
+            <p className="text-xs text-zinc-400">
+              {selectedKey
+                ? "There are no active ticket tiers allocated for this selected venue slot."
+                : "There are no active ticket tiers allocated for this event."}
+            </p>
           </div>
         ) : (
-          displayTiers.map((tier: any) => (
+          displayTiers.map((tier: DisplayTierItem) => (
             <div
               key={tier.id}
               className="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col justify-between gap-5"
@@ -107,8 +179,11 @@ export default function TicketTiersPage() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                <span className="text-zinc-500 font-mono text-[11px]">
+                  {selectedKey ? `KEY: ${selectedKey}` : "All Slots"}
+                </span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   Slot Active
                 </span>
               </div>
