@@ -60,28 +60,53 @@ export function HeroBanner() {
   const imagePath = eventData?.poster_image || eventData?.event_banner || analytics?.event?.poster_image || analytics?.event?.event_banner || eventData?.imageUrl;
   const bannerImg = getImageUrl(imagePath, CURRENT_EVENT.imageUrl);
 
-  const soldCount = analytics?.summary?.tickets_sold ?? volume?.total_tickets ?? volume?.venue_total_tickets ?? 0;
-  const totalCapacity = analytics?.summary?.ticket_capacity ?? eventData?.total_capacity ?? 0;
+  const hasSlotTickets = Array.isArray(tickets) && tickets.length > 0;
+
+  // Calculate slot capacities from tickets-by-slot API when available
+  const slotCapacity = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.total_tickets || 0), 0)
+    : 0;
+  const slotRemaining = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.remaining_tickets || 0), 0)
+    : 0;
+  const slotSold = Math.max(0, slotCapacity - slotRemaining);
+
+  const totalCapacity = slotCapacity > 0
+    ? slotCapacity
+    : (analytics?.summary?.ticket_capacity ?? eventData?.total_capacity ?? 0);
+
+  const soldCount = slotCapacity > 0
+    ? slotSold
+    : (analytics?.summary?.tickets_sold ?? volume?.total_tickets ?? volume?.venue_total_tickets ?? 0);
+
+  const leftCount = slotCapacity > 0
+    ? slotRemaining
+    : (analytics?.summary?.tickets_left ?? Math.max(0, totalCapacity - soldCount));
 
   const percentSold = analytics?.summary?.sell_through_percentage ?? (
     totalCapacity > 0 ? Math.min(100, Math.round((soldCount / totalCapacity) * 1000) / 10) : 0
   );
-  const leftCount = analytics?.summary?.tickets_left ?? Math.max(0, totalCapacity - soldCount);
   const grossSale = analytics?.summary?.gross_ticket_sale ?? volume?.total_amount ?? volume?.venue_total_amount ?? 0;
 
-  // Render ticket tiers from analytics or tickets state
+  // Render ticket tiers: prioritize live slot tickets from tickets-by-slot API
   const apiTiers = analytics?.event?.ticket_tiers;
-  const tierList = Array.isArray(apiTiers) && apiTiers.length > 0
+  const tierList = hasSlotTickets
+    ? tickets.map((t: any) => ({
+        id: t.id,
+        name: t.ticket_name || t.name,
+        price: Number(t.ticket_visualize_amount || t.ticket_amount || 0),
+        remaining: Number(t.remaining_tickets || 0),
+        total: Number(t.total_tickets || 0),
+        isSoldOut: Boolean(t.is_sold_out || (Number(t.total_tickets || 0) > 0 && Number(t.remaining_tickets || 0) === 0)),
+      }))
+    : Array.isArray(apiTiers) && apiTiers.length > 0
     ? apiTiers.map((t: any) => ({
         id: t.id,
         name: t.ticket_name,
         price: Number(t.ticket_amount || 0),
-      }))
-    : tickets.length > 0
-    ? tickets.map((t: any) => ({
-        id: t.id,
-        name: t.ticket_name,
-        price: Number(t.ticket_amount || 0),
+        remaining: 0,
+        total: 0,
+        isSoldOut: false,
       }))
     : [];
 
@@ -142,9 +167,20 @@ export function HeroBanner() {
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {tierList.map((tier) => (
-              <div key={tier.id} className="rounded-xl border border-[#0e543e] bg-[#093d2c]/80 px-3 py-1.5 font-medium text-zinc-300">
+              <div key={tier.id} className="flex items-center gap-2 rounded-xl border border-[#0e543e] bg-[#093d2c]/80 px-3 py-1.5 font-medium text-zinc-300">
                 <span>{tier.name} </span>
                 <span className="font-bold text-[#00d07d]">{currency} {formatAmount(tier.price)}</span>
+                {tier.total > 0 && (
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                      tier.isSoldOut
+                        ? "bg-red-500/20 text-red-300"
+                        : "bg-[#00d07d]/20 text-[#00d07d]"
+                    }`}
+                  >
+                    {tier.isSoldOut ? "Sold Out" : `${tier.remaining} left`}
+                  </span>
+                )}
               </div>
             ))}
           </div>

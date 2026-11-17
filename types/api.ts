@@ -22,6 +22,29 @@ export interface EventDetailParams {
   id: string | number;
 }
 
+export interface EventOrganizer {
+  id?: number;
+  name?: string;
+  contact_number?: string;
+  organizer_banner?: string | null;
+  profile_image?: string | null;
+  social_media_links?: Record<string, string>;
+  description?: string;
+  country?: string;
+  organizer_slug?: string | null;
+}
+
+export interface EventDetailData {
+  id?: string | number;
+  event_name?: string;
+  event_description?: string;
+  event_datetime?: string;
+  event_banner?: string | null;
+  event_expire_on?: string;
+  event_organizer?: EventOrganizer;
+  [key: string]: unknown;
+}
+
 // 2 - Analytics & volume
 export interface EventAnalyticsParams {
   id: string | number;

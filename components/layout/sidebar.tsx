@@ -8,10 +8,7 @@ import {
   Calendar,
   Receipt,
   Tags,
-  QrCode,
-  Ticket,
-  Wallet,
-  Settings,
+  Building,
   Ticket as LogoIcon,
   X
 } from "lucide-react";
@@ -39,6 +36,8 @@ const NAV_SECTIONS: NavSection[] = [
       { name: "Ticket Tiers", href: "/ticket-tiers", icon: Tags },
     ],
   },
+  /*
+  // Temporarily hidden pending development (future planning)
   {
     title: "MANAGE",
     items: [
@@ -47,10 +46,11 @@ const NAV_SECTIONS: NavSection[] = [
       { name: "Payouts", href: "/payouts", icon: Wallet },
     ],
   },
+  */
   {
     title: "ACCOUNT",
     items: [
-      { name: "Team & Settings", href: "/settings", icon: Settings },
+      { name: "Organizer Details", href: "/settings", icon: Building },
     ],
   },
 ];
