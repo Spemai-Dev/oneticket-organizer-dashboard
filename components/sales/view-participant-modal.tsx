@@ -21,7 +21,9 @@ import {
   getDetailsById,
   reSend,
   resendUpgradeConfirmation,
+  setParticipantQrEnabled,
 } from "../../lib/services/dashboard";
+import { QrEnableSwitch } from "./qr-enable-switch";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatAmount } from "../../lib/utils";
 import {
@@ -108,7 +110,15 @@ function PersonBlock({
   );
 }
 
-function TicketQrDetails({ qrTickets }: { qrTickets: ParticipantQrTicket[] }) {
+function TicketQrDetails({
+  qrTickets,
+  updatingId,
+  onToggleAssigned,
+}: {
+  qrTickets: ParticipantQrTicket[];
+  updatingId: number | string | null;
+  onToggleAssigned: (allocationId: number | string, enabled: boolean) => void;
+}) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   const copyLink = async (url: string) => {
@@ -208,6 +218,14 @@ function TicketQrDetails({ qrTickets }: { qrTickets: ParticipantQrTicket[] }) {
                     )}
                   </button>
                 </div>
+                {qr.allocation_id != null ? (
+                  <QrEnableSwitch
+                    enabled={qr.is_qr_enabled !== false}
+                    busy={updatingId === qr.allocation_id}
+                    label={qr.is_qr_enabled === false ? "Disabled" : "Enabled"}
+                    onChange={(next) => onToggleAssigned(qr.allocation_id as number | string, next)}
+                  />
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -250,6 +268,7 @@ export function ViewParticipantModal({
 
   const [upgradeTicket, setUpgradeTicket] = useState<ParticipantTicketItem | null>(null);
   const [cancelTicket, setCancelTicket] = useState<ParticipantTicketItem | null>(null);
+  const [qrUpdatingId, setQrUpdatingId] = useState<number | string | "all" | null>(null);
 
   const fetchDetailPayload = useCallback(async (): Promise<{
     detail?: ParticipantDetailData;
@@ -450,7 +469,48 @@ export function ViewParticipantModal({
 
   const currency = detail?.currency || "LKR";
   const formatMoney = (value: unknown) => `${currency} ${formatAmount(toFiniteNumber(value) ?? 0)}`;
+  const updateQrEnabled = async (enabled: boolean, allocationId?: number | string) => {
+    if (!eventId || !transactionReference) return;
+    setQrUpdatingId(allocationId ?? "all");
+    setFeedback(null);
+    try {
+      await setParticipantQrEnabled({
+        event_id: eventId,
+        transaction_id: transactionReference,
+        is_qr_enabled: enabled,
+        allocation_id: allocationId,
+      });
+      setDetail((prev) => {
+        if (!prev?.tickets) return prev;
+        return {
+          ...prev,
+          tickets: prev.tickets.map((ticket) => ({
+            ...ticket,
+            qr_tickets: (ticket.qr_tickets || []).map((qr) => {
+              if (allocationId != null) {
+                return qr.allocation_id === allocationId ? { ...qr, is_qr_enabled: enabled } : qr;
+              }
+              return qr.was_transferred ? qr : { ...qr, is_qr_enabled: enabled };
+            }),
+          })),
+        };
+      });
+      onActionSuccess?.();
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(err, "Could not update the QR."),
+      });
+    } finally {
+      setQrUpdatingId(null);
+    }
+  };
+
   const ticketsList = Array.isArray(detail?.tickets) ? detail.tickets : [];
+  const unassignedQrTickets = ticketsList.flatMap((ticket) =>
+    (ticket.qr_tickets || []).filter((qr) => !qr.was_transferred),
+  );
+  const commonQrEnabled = unassignedQrTickets.every((qr) => qr.is_qr_enabled !== false);
   const totalTicketCount = ticketsList.reduce(
     (sum, t) => sum + (Number(t?.count) || 0),
     0
@@ -670,11 +730,21 @@ export function ViewParticipantModal({
 
                 {/* 4. Tickets Details */}
                 <section className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/40 p-4">
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-200/80 dark:border-zinc-800">
-                    <Ticket className="h-4 w-4 text-[#00d07d]" />
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">
-                      Tickets Details
-                    </h3>
+                  <div className="mb-3 flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-2 dark:border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-[#00d07d]" />
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-700 dark:text-zinc-200">
+                        Tickets Details
+                      </h3>
+                    </div>
+                    {unassignedQrTickets.length > 0 ? (
+                      <QrEnableSwitch
+                        enabled={commonQrEnabled}
+                        busy={qrUpdatingId === "all"}
+                        label={commonQrEnabled ? "All QR links enabled" : "All QR links disabled"}
+                        onChange={(next) => updateQrEnabled(next)}
+                      />
+                    ) : null}
                   </div>
 
                   {ticketsList.length > 0 ? (
@@ -757,7 +827,13 @@ export function ViewParticipantModal({
                                           </button>
                                         </div>
 
-                                        <TicketQrDetails qrTickets={qrTickets} />
+                                        <TicketQrDetails
+                                          qrTickets={qrTickets}
+                                          updatingId={qrUpdatingId === "all" ? null : qrUpdatingId}
+                                          onToggleAssigned={(allocationId, enabled) =>
+                                            updateQrEnabled(enabled, allocationId)
+                                          }
+                                        />
                                       </div>
                                     </td>
                                   </tr>
