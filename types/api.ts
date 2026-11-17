@@ -61,7 +61,9 @@ export interface EventParticipantDetailParams {
 }
 
 export interface ParticipantQrTicket {
+  allocation_id?: number | string;
   qr_link?: string | null;
+  is_qr_enabled?: boolean;
   is_scanned?: boolean;
   scanned_at?: string | null;
   seat?: string | null;

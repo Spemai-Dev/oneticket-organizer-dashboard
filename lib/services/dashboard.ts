@@ -250,6 +250,15 @@ export const previewTicketCancellation = async (
  * Ticket Cancellation Confirm
  * Endpoint: POST /api/v3/organization/dashboard/ticket-cancellation/confirm/?onepay_transaction_id=...&customer_email=...
  */
+export const setParticipantQrEnabled = async (body: {
+  event_id: string;
+  transaction_id: string;
+  is_qr_enabled: boolean;
+  allocation_id?: number | string;
+}) => {
+  return await auth_add("organization/dashboard/event-participant-qr/", body);
+};
+
 export const confirmTicketCancellation = async (
   queryParams: TicketCancellationQueryParams | string,
   body: TicketCancellationPayload
