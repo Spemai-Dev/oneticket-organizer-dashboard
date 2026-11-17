@@ -1,14 +1,20 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { Event } from "../../types";
 import { formatNumber, formatAmount } from "../../lib/utils";
+import { useDashboard } from "../../lib/context/dashboard-context";
 
 interface EventCardProps {
   event: Event;
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const router = useRouter();
+  const { setSelectedEventId } = useDashboard();
+
   const sold = Number(event.soldCount || 0);
   const total = Number(event.totalCapacity || 1);
   const percentSold = total > 0 ? Math.min(100, Math.round((sold / total) * 100)) : 0;
@@ -16,6 +22,13 @@ export function EventCard({ event }: EventCardProps) {
   const grossRevenue = event.grossRevenue !== undefined && event.grossRevenue > 0
     ? Number(event.grossRevenue)
     : sold * 8500;
+
+  const handleViewData = () => {
+    if (event.id) {
+      setSelectedEventId(String(event.id));
+    }
+    router.push("/dashboard");
+  };
 
   const getStatusBadge = (status: string) => {
     const isLive = status === "Live";
@@ -35,13 +48,13 @@ export function EventCard({ event }: EventCardProps) {
   };
 
   return (
-    <div className="flex flex-col gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="flex flex-col gap-5 rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-start gap-4 sm:gap-5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={event.imageUrl}
           alt={event.title}
-          className="h-[7.5rem] w-[6.5rem] shrink-0 cursor-pointer rounded-2xl border border-black/5 object-cover shadow-md transition duration-300 hover:scale-105 hover:shadow-lg sm:h-[8.5rem] sm:w-[7.5rem] dark:border-white/10"
+          className="h-[7.5rem] w-[6.5rem] shrink-0 rounded-2xl border border-black/5 object-cover shadow-md sm:h-[8.5rem] sm:w-[7.5rem] dark:border-white/10"
         />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -57,7 +70,7 @@ export function EventCard({ event }: EventCardProps) {
             {getStatusBadge(event.status)}
           </div>
 
-          <h3 className="mt-0.5 cursor-pointer truncate text-base font-extrabold text-zinc-900 transition-colors hover:text-[#00d07d] sm:text-lg dark:text-white" title={event.title}>
+          <h3 className="mt-0.5 truncate text-base font-extrabold text-zinc-900 sm:text-lg dark:text-white" title={event.title}>
             {event.title}
           </h3>
 
@@ -82,11 +95,22 @@ export function EventCard({ event }: EventCardProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">GROSS REVENUE</span>
-        <h4 className="text-xl font-extrabold text-zinc-900 sm:text-[1.375rem] dark:text-white">
-          {currency} {formatAmount(grossRevenue)}
-        </h4>
+      <div className="flex items-center justify-between gap-4 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">GROSS REVENUE</span>
+          <h4 className="text-xl font-extrabold text-zinc-900 sm:text-[1.375rem] dark:text-white">
+            {currency} {formatAmount(grossRevenue)}
+          </h4>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleViewData}
+          className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#043825] px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#064d33] dark:bg-[#00d07d] dark:text-[#041c14] dark:hover:bg-[#00b56c]"
+        >
+          <span>View Data</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

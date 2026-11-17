@@ -463,7 +463,7 @@ export function SalesDataTable() {
                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-3.5 py-2 text-zinc-700 outline-none transition-colors hover:bg-zinc-100 hover:text-emerald-600 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-emerald-400"
                               >
                                 <Eye className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                <span>View Participant</span>
+                                <span>View Details</span>
                               </DropdownMenu.Item>
                               <DropdownMenu.Item
                                 onClick={() => handleOpenAction(p, "upgrade")}

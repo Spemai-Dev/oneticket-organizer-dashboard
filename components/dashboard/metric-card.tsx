@@ -7,7 +7,7 @@ import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatNumber, formatAmount } from "../../lib/utils";
 
 export function GrossSaleCard() {
-  const { volume, eventData, analytics, selectedKey } = useDashboard();
+  const { volume, eventData, analytics, selectedKey, tickets } = useDashboard();
 
   const currency = analytics?.event?.currency || eventData?.tickets_currency || eventData?.currency || "LKR";
 
@@ -22,6 +22,15 @@ export function GrossSaleCard() {
     : volume?.total_tickets != null
     ? Number(volume.total_tickets)
     : undefined;
+
+  const hasSlotTickets = Array.isArray(tickets) && tickets.length > 0;
+  const slotCapacity = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.total_tickets || 0), 0)
+    : 0;
+  const slotRemaining = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.remaining_tickets || 0), 0)
+    : 0;
+  const slotSold = Math.max(0, slotCapacity - slotRemaining);
 
   const grossSale =
     volumeAmount ??
@@ -40,6 +49,7 @@ export function GrossSaleCard() {
     grossSale;
 
   const ticketsSold =
+    (hasSlotTickets && slotCapacity > 0 ? slotSold : undefined) ??
     volumeTickets ??
     analytics?.summary?.tickets_sold ??
     analytics?.tickets_sold ??
@@ -118,9 +128,27 @@ export function GrossSaleCard() {
 }
 
 export function RunRateCard() {
-  const { volume, eventData, analytics } = useDashboard();
+  const { volume, eventData, analytics, tickets } = useDashboard();
+
+  const hasSlotTickets = Array.isArray(tickets) && tickets.length > 0;
+  const slotCapacity = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.total_tickets || 0), 0)
+    : 0;
+  const slotRemaining = hasSlotTickets
+    ? tickets.reduce((acc: number, t: any) => acc + Number(t.remaining_tickets || 0), 0)
+    : 0;
+  const slotSold = Math.max(0, slotCapacity - slotRemaining);
+
+  const totalCapacity =
+    (hasSlotTickets && slotCapacity > 0 ? slotCapacity : undefined) ??
+    analytics?.summary?.ticket_capacity ??
+    analytics?.ticket_capacity ??
+    eventData?.total_capacity ??
+    eventData?.ticket_capacity ??
+    0;
 
   const ticketsSold =
+    (hasSlotTickets && slotCapacity > 0 ? slotSold : undefined) ??
     analytics?.summary?.tickets_sold ??
     analytics?.tickets_sold ??
     volume?.total_tickets ??
@@ -128,19 +156,17 @@ export function RunRateCard() {
     eventData?.tickets_sold ??
     0;
 
-  const totalCapacity =
-    analytics?.summary?.ticket_capacity ??
-    analytics?.ticket_capacity ??
-    eventData?.total_capacity ??
-    eventData?.ticket_capacity ??
-    0;
-
   const percentSold = analytics?.summary?.sell_through_percentage ?? analytics?.sell_through_percentage ?? (
     totalCapacity > 0 ? Math.min(100, Math.round((ticketsSold / totalCapacity) * 100)) : 0
   );
 
   const runRate = analytics?.run_rate;
-  const ticketsLeft = runRate?.tickets_left ?? analytics?.summary?.tickets_left ?? analytics?.tickets_left ?? Math.max(0, totalCapacity - ticketsSold);
+  const ticketsLeft =
+    (hasSlotTickets && slotCapacity > 0 ? slotRemaining : undefined) ??
+    runRate?.tickets_left ??
+    analytics?.summary?.tickets_left ??
+    analytics?.tickets_left ??
+    Math.max(0, totalCapacity - ticketsSold);
   const daysToEvent = runRate?.days_to_event ?? analytics?.days_to_event;
   const neededPerDay = runRate?.needed_per_day_to_sell_out ?? analytics?.needed_per_day_to_sell_out;
   const currentPace = runRate?.current_pace_per_day ?? analytics?.current_pace_per_day;
