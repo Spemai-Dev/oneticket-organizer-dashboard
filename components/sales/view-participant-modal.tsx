@@ -23,7 +23,7 @@ import {
   resendUpgradeConfirmation,
   setParticipantQrEnabled,
 } from "../../lib/services/dashboard";
-import { QrEnableSwitch } from "./qr-enable-switch";
+import { QrDisableControl } from "./qr-enable-switch";
 import { useDashboard } from "../../lib/context/dashboard-context";
 import { formatAmount } from "../../lib/utils";
 import {
@@ -117,7 +117,7 @@ function TicketQrDetails({
 }: {
   qrTickets: ParticipantQrTicket[];
   updatingId: number | string | null;
-  onToggleAssigned: (allocationId: number | string, enabled: boolean) => void;
+  onToggleAssigned: (allocationId: number | string, enabled: boolean, reason?: string) => void;
 }) {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
@@ -219,11 +219,15 @@ function TicketQrDetails({
                   </button>
                 </div>
                 {qr.allocation_id != null ? (
-                  <QrEnableSwitch
+                  <QrDisableControl
                     enabled={qr.is_qr_enabled !== false}
+                    reason={qr.qr_disable_reason}
                     busy={updatingId === qr.allocation_id}
-                    label={qr.is_qr_enabled === false ? "Disabled" : "Enabled"}
-                    onChange={(next) => onToggleAssigned(qr.allocation_id as number | string, next)}
+                    enabledLabel="Enabled"
+                    disabledLabel="Disabled"
+                    onSave={(next, disableReason) =>
+                      onToggleAssigned(qr.allocation_id as number | string, next, disableReason)
+                    }
                   />
                 ) : null}
               </div>
@@ -469,7 +473,11 @@ export function ViewParticipantModal({
 
   const currency = detail?.currency || "LKR";
   const formatMoney = (value: unknown) => `${currency} ${formatAmount(toFiniteNumber(value) ?? 0)}`;
-  const updateQrEnabled = async (enabled: boolean, allocationId?: number | string) => {
+  const updateQrEnabled = async (
+    enabled: boolean,
+    allocationId?: number | string,
+    reason?: string,
+  ) => {
     if (!eventId || !transactionReference) return;
     setQrUpdatingId(allocationId ?? "all");
     setFeedback(null);
@@ -479,18 +487,24 @@ export function ViewParticipantModal({
         transaction_id: transactionReference,
         is_qr_enabled: enabled,
         allocation_id: allocationId,
+        qr_disable_reason: enabled ? "" : reason,
       });
       setDetail((prev) => {
         if (!prev?.tickets) return prev;
+        const savedReason = enabled ? null : reason || null;
         return {
           ...prev,
           tickets: prev.tickets.map((ticket) => ({
             ...ticket,
             qr_tickets: (ticket.qr_tickets || []).map((qr) => {
               if (allocationId != null) {
-                return qr.allocation_id === allocationId ? { ...qr, is_qr_enabled: enabled } : qr;
+                return qr.allocation_id === allocationId
+                  ? { ...qr, is_qr_enabled: enabled, qr_disable_reason: savedReason }
+                  : qr;
               }
-              return qr.was_transferred ? qr : { ...qr, is_qr_enabled: enabled };
+              return qr.was_transferred
+                ? qr
+                : { ...qr, is_qr_enabled: enabled, qr_disable_reason: savedReason };
             }),
           })),
         };
@@ -511,6 +525,7 @@ export function ViewParticipantModal({
     (ticket.qr_tickets || []).filter((qr) => !qr.was_transferred),
   );
   const commonQrEnabled = unassignedQrTickets.every((qr) => qr.is_qr_enabled !== false);
+  const commonDisableReason = unassignedQrTickets.find((qr) => qr.qr_disable_reason)?.qr_disable_reason;
   const totalTicketCount = ticketsList.reduce(
     (sum, t) => sum + (Number(t?.count) || 0),
     0
@@ -738,12 +753,16 @@ export function ViewParticipantModal({
                       </h3>
                     </div>
                     {unassignedQrTickets.length > 0 ? (
-                      <QrEnableSwitch
-                        enabled={commonQrEnabled}
-                        busy={qrUpdatingId === "all"}
-                        label={commonQrEnabled ? "All QR links enabled" : "All QR links disabled"}
-                        onChange={(next) => updateQrEnabled(next)}
-                      />
+                      <div className="min-w-[220px]">
+                        <QrDisableControl
+                          enabled={commonQrEnabled}
+                          reason={commonDisableReason}
+                          busy={qrUpdatingId === "all"}
+                          enabledLabel="All QR links enabled"
+                          disabledLabel="All QR links disabled"
+                          onSave={(next, disableReason) => updateQrEnabled(next, undefined, disableReason)}
+                        />
+                      </div>
                     ) : null}
                   </div>
 
@@ -830,8 +849,8 @@ export function ViewParticipantModal({
                                         <TicketQrDetails
                                           qrTickets={qrTickets}
                                           updatingId={qrUpdatingId === "all" ? null : qrUpdatingId}
-                                          onToggleAssigned={(allocationId, enabled) =>
-                                            updateQrEnabled(enabled, allocationId)
+                                          onToggleAssigned={(allocationId, enabled, reason) =>
+                                            updateQrEnabled(enabled, allocationId, reason)
                                           }
                                         />
                                       </div>

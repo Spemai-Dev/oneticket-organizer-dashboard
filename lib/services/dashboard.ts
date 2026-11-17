@@ -255,6 +255,7 @@ export const setParticipantQrEnabled = async (body: {
   transaction_id: string;
   is_qr_enabled: boolean;
   allocation_id?: number | string;
+  qr_disable_reason?: string;
 }) => {
   return await auth_add("organization/dashboard/event-participant-qr/", body);
 };
