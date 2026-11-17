@@ -11,4 +11,4 @@ export const environment = {
   IMAGE_BASE_URL: 'https://storage.googleapis.com/oneticket',
 };
 
-export const base_url_new = environment.BASE_URL_UAT;
+export const base_url_new = environment.BASE_URL_LIVE;
